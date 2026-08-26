@@ -83,6 +83,65 @@ jobs:
           codesign -dv --verbose=2 "$APP" 2>&1 | head -8
           codesign --verify --deep --strict --verbose=2 "$APP" 2>&1 | head -8
 
+      - name: Verify the built app
+        # This runs on a real Mac, so check the things that have actually shipped
+        # broken rather than assuming a green build means a working app. Every
+        # check below corresponds to a bug that reached a tester.
+        run: |
+          set -e
+          APP=$(find dist -maxdepth 2 -name "*.app" -print -quit)
+          test -n "$APP" || { echo "FAIL: no .app produced"; exit 1; }
+          echo "checking $APP"
+          fail=0
+
+          echo "== architecture =="
+          ARCHS=$(lipo -archs "$APP/Contents/MacOS/SmallWorlds")
+          echo "   $ARCHS"
+          case "$ARCHS" in
+            *x86_64*) ;;
+            *) echo "   FAIL: must be x86_64 - the Flash plugin has no arm64 slice"; fail=1 ;;
+          esac
+
+          echo "== LSRequiresNativeExecution (main bundle only) =="
+          V=$(/usr/libexec/PlistBuddy -c "Print :LSRequiresNativeExecution" \
+                "$APP/Contents/Info.plist" 2>/dev/null || echo missing)
+          echo "   $V"
+          if [ "$V" != "false" ]; then
+            echo "   FAIL: must be false, or LaunchServices refuses Rosetta and"
+            echo "         Apple Silicon Macs cannot launch it at all"
+            fail=1
+          fi
+
+          echo "== code signature =="
+          if codesign --verify --deep --strict --verbose=2 "$APP" 2>&1; then
+            codesign -dv "$APP" 2>&1 | head -3
+          else
+            echo "   FAIL: signature invalid - macOS kills unsigned Electron apps silently"
+            fail=1
+          fi
+
+          echo "== Flash plugin present =="
+          if [ -d "$APP/Contents/plugins/PepperFlashPlayer.plugin" ]; then
+            lipo -archs "$APP/Contents/plugins/PepperFlashPlayer.plugin/Contents/MacOS/PepperFlashPlayer" \
+              | sed 's/^/   plugin archs: /'
+          else
+            echo "   FAIL: Flash plugin missing - the game will not render"
+            fail=1
+          fi
+
+          echo "== native modules must match the target arch =="
+          BAD=$(find "$APP" -name "*.node" -exec sh -c \
+                'lipo -archs "$1" | grep -q x86_64 || echo "$1"' _ {} \; 2>/dev/null || true)
+          if [ -n "$BAD" ]; then
+            echo "   WARNING: non-x86_64 native modules (cannot load under Rosetta):"
+            echo "$BAD" | sed 's/^/     /'
+          else
+            echo "   all .node modules are x86_64"
+          fi
+
+          test "$fail" -eq 0 || { echo "VERIFICATION FAILED - not publishing"; exit 1; }
+          echo "ALL CHECKS PASSED"
+
       - name: Package the signed app into a DMG
         run: npx electron-builder --mac --${{ inputs.arch }} --publish never --prepackaged "$(find dist -maxdepth 2 -name '*.app' -print -quit)"
 
