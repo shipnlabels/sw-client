@@ -5,7 +5,22 @@ picks this up on an actual Mac. Everything below was established from a Windows
 machine plus the game VPS, which is why the last few steps stalled: the
 remaining questions need a Mac to answer.
 
-**The one-line summary:** the macOS build is now correctly signed, but it still
+> **RESOLVED 2026-08-26.** The blocker was **Gatekeeper quarantine**, not
+> architecture and not Rosetta. Safari tags the downloaded DMG with
+> `com.apple.quarantine`; macOS then refuses the app and reports
+> "not supported on this Mac", which points at entirely the wrong thing.
+> `xattr -dr com.apple.quarantine /Applications/SmallWorlds.app` fixes it.
+> Right-click → Open is **not** sufficient on its own.
+>
+> The signing work in this branch was still necessary — the earlier *unsigned*
+> build failed a second, different way (macOS kills unsigned Electron apps
+> silently). Both had to be fixed. Players are now walked through the quarantine
+> step at <https://playsmallworlds.com/download/mac/>.
+>
+> The rest of this document is kept as the reasoning trail, and because the
+> constraints below still apply to every future build.
+
+**Original summary:** the macOS build is now correctly signed, but it still
 refuses to launch on an Apple Silicon Mac with "not supported on this Mac", and
 we have not yet confirmed whether the tester was even running the new build.
 
@@ -148,10 +163,19 @@ another cycle on them:
 | The build targeted arm64 by mistake | `file` on the main executable returned `Mach-O 64-bit executable x86_64` |
 | Rosetta just needed installing | Plausible, but the install command's output was never actually confirmed — **still open**, see check 2 |
 | The Mac was Intel | `uname -m` returned `arm64`. This was *inferred* from the ambiguous Rosetta message for several rounds and was simply wrong |
+| It was an architecture problem at all | It never was. The cause was Gatekeeper quarantine — see the box at the top |
 
 The methodological lesson, offered honestly: `uname -m` should have been
-obtained in the first five minutes. Several rounds were spent building theories
-on an inference about the hardware rather than a fact.
+obtained in the first five minutes, and quarantine should have been eliminated
+before any theory about architecture. The failure mode actively misleads —
+macOS reports an architecture error for a security refusal — so check the cheap,
+non-obvious cause first:
+
+```sh
+xattr -l /Applications/SmallWorlds.app     # is com.apple.quarantine present?
+codesign -dv /Applications/SmallWorlds.app # is it signed at all?
+uname -m                                   # only then, architecture
+```
 
 ---
 
