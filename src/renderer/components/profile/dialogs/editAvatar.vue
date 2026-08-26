@@ -15,35 +15,19 @@
         <v-form ref="form">
           <v-container>
             <v-row>
-              <v-col cols="6">
-                <v-text-field 
-                  v-model="firstName" 
-                  label="First Name" 
-                  required
-                  dense
-                  variant="outlined"
-                  :disabled="isSaving"
-                ></v-text-field>
-              </v-col>
-              <v-col cols="6">
-                <v-text-field 
-                  v-model="lastName" 
-                  label="Last Name" 
-                  required
-                  dense
-                  variant="outlined"
-                  :disabled="isSaving"
-                ></v-text-field>
-              </v-col>
-            </v-row>
-            <v-row justify="center">
               <v-col cols="12">
-                <v-radio-group v-model="gender" mandatory inline label="Gender" :disabled="isSaving">
-                  <v-radio label="Male" value="male"></v-radio>
-                  <v-radio label="Female" value="female"></v-radio>
-                </v-radio-group>
+                <!-- An existing avatar's name is permanent - this dialog only
+                     changes its look, so the name is shown, not editable. -->
+                <div class="avatar-name-display">
+                  <div class="avatar-name-label">Editing</div>
+                  <h3 class="avatar-name-value">{{ avatarDisplayName }}</h3>
+                </div>
               </v-col>
             </v-row>
+            <!-- Gender is fixed once an avatar exists: this dialog changes
+                 look only. Switching it here rewrote the config's gender
+                 attribute, which swaps the whole body rig rather than
+                 restyling the avatar. -->
             <v-row v-if="isAdminComputed" justify="center">
               <v-col cols="12" class="d-flex justify-end">
                 <v-btn
@@ -73,14 +57,6 @@
             </v-row>
           </v-container>
         </v-form>
-        <div v-if="firstName && lastName && hasNameChanges" class="name-message" :class="{
-          'success': nameAvailable,
-          'warning': nameAvailable && nameMessage && nameMessage.includes('the'),
-          'error': !nameAvailable && nameMessage
-        }">
-          <v-icon class="mr-1" :icon="nameAvailable ? 'mdi-check-circle' : 'mdi-alert-circle'"></v-icon>
-          {{ nameMessage }}
-        </div>
       </v-card-text>
       <v-card-actions class="sw-dialog-actions">
         <v-spacer></v-spacer>
@@ -131,21 +107,14 @@ export default {
       required: true,
     },
   },
-  emits: ['close', 'saveAvatarChanges', 'checkNameAvailability'],
+  emits: ['close', 'saveAvatarChanges'],
   data() {
     return {
-      firstName: '',
-      lastName: '',
       gender: 'male',
       configXML: '',
       showXML: false,
       isSaving: false,
       id: null,
-      nameAvailable: false,
-      nameMessage: "",
-      nameCheckTimeout: null,
-      originalFirstName: '',
-      originalLastName: '',
       originalGender: '',
       originalConfigXML: '',
     };
@@ -161,14 +130,13 @@ export default {
       );
     },
     hasChanges() {
-      return this.firstName !== this.originalFirstName ||
-             this.lastName !== this.originalLastName ||
-             this.gender !== this.originalGender ||
-             (this.isAdminComputed && this.configXML !== this.originalConfigXML);
+      // Look-only: the config is the sole editable thing here.
+      return this.configXML !== this.originalConfigXML;
     },
-    hasNameChanges() {
-      return this.firstName !== this.originalFirstName || 
-             this.lastName !== this.originalLastName;
+    avatarDisplayName() {
+      const avatar = this.user || {};
+      return avatar.fullName ||
+        [avatar.firstName, avatar.lastName].filter(Boolean).join(' ');
     },
     dialog: {
       get() {
@@ -185,36 +153,16 @@ export default {
     user: {
       handler(newVal) {
         if (newVal) {
-          this.firstName = newVal.firstName || '';
-          this.lastName = newVal.lastName || '';
           this.gender = newVal.gender || '';
           this.configXML = newVal.configXML || '';
           this.id = newVal.id || null;
-          this.nameInstance = newVal.nameInstance || '';
-          this.originalFirstName = newVal.firstName || '';
-          this.originalLastName = newVal.lastName || '';
           this.originalGender = newVal.gender || '';
           this.originalConfigXML = newVal.configXML || '';
         }
       },
       immediate: true,
     },
-    firstName(newVal) {
-      if (this.hasNameChanges) {
-        this.debounceNameCheck();
-      } else {
-        this.nameAvailable = true;
-        this.nameMessage = "";
-      }
-    },
-    lastName(newVal) {
-      if (this.hasNameChanges) {
-        this.debounceNameCheck();
-      } else {
-        this.nameAvailable = true;
-        this.nameMessage = "";
-      }
-    },
+    // Retained for the create flow's benefit only; edit never changes gender.
     gender(newVal) {
 
       if (newVal === 'male') {
@@ -238,80 +186,31 @@ export default {
       this.isSaving = false;
 
       if (!error) {
-        //show msg 
+        //show msg
         // Successfully saved, now close the dialog
         // update the original values to the new values
-        this.originalFirstName = this.firstName;
-        this.originalLastName = this.lastName;
-        this.originalGender = this.gender; 
+        this.originalGender = this.gender;
         this.originalConfigXML = this.configXML;
         this.close();
-      } 
+      }
       // clear the form to default values
-      this.firstName = this.originalFirstName;
-      this.lastName = this.originalLastName; 
       this.gender = this.originalGender;
       this.configXML = this.originalConfigXML;
-      
-    },
-    debounceNameCheck() {
-      clearTimeout(this.nameCheckTimeout);
-      this.nameMessage = "Checking availability...";
-      
-      this.nameCheckTimeout = setTimeout(() => {
-        if (!this.firstName || !this.lastName) {
-          this.nameAvailable = false;
-          this.nameMessage = "";
-          return;
-        }
-        
-        // Skip check if names haven't changed
-        if (!this.hasNameChanges) {
-          this.nameAvailable = true;
-          this.nameMessage = "";
-          return;
-        }
-        
-        // Use parent's method via emit
-        this.$emit('checkNameAvailability', {
-          firstName: this.firstName,
-          lastName: this.lastName,
-          callback: this.handleNameCheckResult
-        });
-      }, 300);
-    },
-    handleNameCheckResult(result) {
-      this.nameAvailable = result.isAvailable;
-      
-      if (result.isAvailable) {
-        if (result.nameInstance === 1) {
-          this.nameMessage = "Name is available!";
-        } else {
-          this.nameMessage = `Name is taken. It will be modified to "${result.ordinalName}"`;
-        }
-      } else {
-        this.nameMessage = result.message || "This name isn't available";
-      }
+
     },
     async save() {
-      // Check if name is available before saving
-      if (this.hasNameChanges && !this.nameAvailable) {
-        return;
-      }
-      
       this.isSaving = true;
-      
+
       try {
-        // Create data object to emit
+        // Name fields are deliberately absent - an existing avatar's name
+        // cannot be changed, only its look.
         const avatarData = {
-          firstName: this.firstName,
-          lastName: this.lastName,
-          gender: this.gender,
+          // gender is intentionally omitted - it is not editable here, and
+          // sending it would let a tampered client flip the body rig.
           configXML: this.configXML,
           id: this.id,
-          nameInstance: this.nameInstance,
         };
-        
+
         // Emit the save event with the data
         // The parent component will handle the actual API call
         // show loading until the API call is complete
@@ -367,31 +266,22 @@ export default {
   display: flex !important;
 }
 
-.name-message {
-  margin-top: 12px;
+.avatar-name-display {
   padding: 8px 12px;
   border-radius: 4px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
+  border-left: 3px solid #0099cc;
+  background-color: rgba(0, 153, 204, 0.08);
 }
 
-.name-message.success {
-  background-color: rgba(76, 175, 80, 0.1);
-  color: #2e7d32;
-  border-left: 3px solid #2e7d32;
+.avatar-name-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
 }
 
-.name-message.warning {
-  background-color: rgba(255, 193, 7, 0.096);
-  color: #ffad09;
-  font-weight: 500;
-  border-left: 3px solid #ff8f00;
-}
-
-.name-message.error {
-  background-color: rgba(244, 67, 54, 0.1);
-  color: #c62828;
-  border-left: 3px solid #c62828;
+.avatar-name-value {
+  margin: 0;
+  font-weight: 700;
 }
 </style>

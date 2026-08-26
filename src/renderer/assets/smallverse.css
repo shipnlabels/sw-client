@@ -1,0 +1,295 @@
+/* =============================================
+ * SmallWorldsX - shared look & feel
+ *
+ * Design tokens lifted from the classic SmallWorlds web UI: the rounded
+ * VAG typeface, the navy/steel chrome, and the chunky green action buttons.
+ * Kept in one place so the login and profile screens stay consistent and
+ * the palette can be retuned without touching components.
+ * ============================================= */
+
+@font-face {
+  font-family: 'VAG Rounded';
+  src: url('/fonts/OPTIVagRound-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --sw-navy: #1e304d;
+  --sw-navy-light: #2a4166;
+  --sw-steel: #5574a7;
+  --sw-slate: #385077;
+  --sw-green: #47a403;
+  --sw-green-dark: #2d6a02;
+  --sw-green-hover: #3d8c03;
+  --sw-gold: #f3d43a;
+  --sw-cyan: #32c0c9;
+  --sw-sky: #7eb8ff;
+  --sw-pink: #fb5cb6;
+  --sw-border: #cfcfcf;
+  --sw-border-soft: #d3d3d3;
+  --sw-panel: #ffffff;
+  --sw-panel-alt: #f8f9fa;
+  --sw-font: 'VAG Rounded', 'Varela Round', 'Trebuchet MS', sans-serif;
+}
+
+/* ---------- layout shell ---------- */
+
+/* App.vue sets `color: white` and `overflow: hidden` on the shell for the
+   dark game chrome. These screens are light panels, so they opt out of both
+   explicitly rather than relying on inheritance. */
+.sw-page {
+  font-family: var(--sw-font);
+  min-height: 100%;
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
+  color: #333;
+}
+
+/* The artwork band sits behind the top of the page and fades into the
+   page colour, so panels overlap it the way the original did. */
+/* Our own key art. It is a tall poster (1884x2272), so the two screens frame
+   it differently: the login page shows it whole behind the panel, while the
+   profile uses it as a band across the top and drops the lower half where the
+   characters are, so nothing competes with the content sitting on it. */
+.sw-page-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 520px;
+  background-image: url('/img/tw-keyart.png');
+  background-size: contain;
+  background-position: center top;
+  background-color: #14243f;
+  background-repeat: no-repeat;
+  filter: blur(0.5px);
+  transform: scale(1.02);          /* hides the blur's soft edges */
+  transform-origin: center top;
+  z-index: 0;
+  pointer-events: none;
+  /* Fade the art out downward instead of ending on a hard seam. */
+  -webkit-mask-image: linear-gradient(180deg,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 1) 62%,
+      rgba(0, 0, 0, 0.55) 84%,
+      rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(180deg,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 1) 62%,
+      rgba(0, 0, 0, 0.55) 84%,
+      rgba(0, 0, 0, 0) 100%);
+}
+
+/* A light wash so panel edges keep their contrast against the art. */
+.sw-page-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+              rgba(223, 231, 242, 0.06) 0%,
+              rgba(203, 215, 232, 0.18) 100%);
+}
+
+/* Login and register have no content below the fold, so the poster runs the
+   full height there and is not masked away. */
+.login-page .sw-page-background,
+.register-page .sw-page-background {
+  height: 100%;
+  background-size: contain;
+  background-position: center center;
+  background-color: #14243f;      /* fills the letterbox either side */
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.login-page .sw-page-background::after,
+.register-page .sw-page-background::after {
+  /* Darkened a touch so the white panel reads cleanly on top of the art. */
+  background: linear-gradient(180deg,
+              rgba(20, 36, 63, 0.34) 0%,
+              rgba(20, 36, 63, 0.46) 100%);
+}
+
+.sw-page > *:not(.sw-page-background) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- panels ---------- */
+
+.sw-panel {
+  background-color: var(--sw-panel);
+  border-radius: 5px;
+  border: 1px solid var(--sw-border);
+  padding: 20px;
+  position: relative;
+  color: #333;
+}
+
+/* Negative margins pull the header out to the panel edge - the panel's own
+   padding would otherwise inset it. */
+.sw-panel-header {
+  background-color: var(--sw-navy);
+  height: 40px;
+  border-radius: 5px 5px 0 0;
+  margin: -20px -20px 20px -20px;
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  color: #fff;
+  gap: 10px;
+}
+
+.sw-panel-title {
+  font-weight: bold;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sw-panel-footer {
+  margin: auto -20px -20px -20px;
+  padding: 12px 20px;
+  background-color: var(--sw-panel-alt);
+  border-top: 1px solid #e0e0e0;
+  border-radius: 0 0 5px 5px;
+}
+
+/* ---------- chrome bits ---------- */
+
+.sw-pill {
+  background-color: var(--sw-slate);
+  border: 1px solid var(--sw-steel);
+  border-radius: 100px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sw-online {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #fff;
+  font-size: 12px;
+}
+
+.sw-online-dot {
+  width: 10px;
+  height: 10px;
+  background-color: var(--sw-green);
+  border-radius: 50%;
+}
+
+.sw-online-dot.is-offline {
+  background-color: #7c7c7c;
+}
+
+/* ---------- buttons ---------- */
+
+/* The signature button: a solid slab with a hard shadow underneath that
+   collapses on press, so it reads as physically depressing. */
+.sw-btn-green {
+  background-color: var(--sw-green);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-family: var(--sw-font);
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--sw-green-dark), 0 4px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.15s ease, transform 0.1s ease,
+              box-shadow 0.1s ease;
+}
+
+.sw-btn-green:hover:not(:disabled) {
+  background-color: var(--sw-green-hover);
+}
+
+.sw-btn-green:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--sw-green-dark);
+}
+
+.sw-btn-green:disabled {
+  background-color: #a0a0a0;
+  box-shadow: 0 3px 0 #7c7c7c;
+  cursor: not-allowed;
+}
+
+.sw-btn-quiet {
+  background-color: #e6e6e6;
+  border: 1px solid var(--sw-border-soft);
+  border-radius: 4px;
+  font-family: var(--sw-font);
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.sw-btn-quiet:hover:not(:disabled) {
+  background-color: #d9d9d9;
+}
+
+.sw-btn-quiet:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sw-nav-arrow {
+  width: 32px;
+  height: 32px;
+  background: var(--sw-navy);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.sw-nav-arrow:hover:not(:disabled) {
+  background: var(--sw-navy-light);
+  transform: scale(1.05);
+}
+
+.sw-nav-arrow:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.sw-nav-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ---------- typography ---------- */
+
+.sw-heading {
+  font-size: 25pt;
+  color: var(--sw-navy);
+  font-weight: bold;
+  font-family: var(--sw-font);
+}
+
+.sw-link {
+  color: var(--sw-steel);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.sw-link:hover {
+  text-decoration: underline;
+}

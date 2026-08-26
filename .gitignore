@@ -12,3 +12,6 @@ electron-builder.yml
 # OS files
 .DS_Store
 Thumbs.db
+# Local backups taken before edits; never part of a build.
+*.bak
+*.orig

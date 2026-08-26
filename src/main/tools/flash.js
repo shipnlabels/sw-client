@@ -16,11 +16,11 @@ module.exports = function () {
       // what is the app.asar.unpacked path of above?
       
       } else {
-        app.commandLine.appendSwitch('ppapi-flash-path', path.join(__dirname, '../../', '/plugins/' + flash[process.platform]));
+        app.commandLine.appendSwitch('ppapi-flash-path', path.join(__dirname, '../../../', 'plugins', flash[process.platform]));
         // what is the app.asar.unpacked path of above?
       
       }
       app.commandLine.appendSwitch('ignore-certificate-errors');
-      console.log('Flash plugin loaded from: ' + path.join(__dirname, '..', 'plugins/' + flash[process.platform]));
+      console.log('Flash plugin loaded from: ' + path.join(__dirname, '../../../', 'plugins', flash[process.platform]));
     
 };

@@ -5,13 +5,26 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- self-hosted: a CDN outage should not take the game client down -->
+    <script src="/jquery-3.6.0.min.js"></script>
     <script src="/game.js"></script>
 
-    <title>Vuetify 3 Vite Preview</title>
+    <title>SmallWorlds</title>
 </head>
 
 <body>
+    <script>
+      function at(n) {
+        n = Math.trunc(n) || 0;
+        if (n < 0) n += this.length;
+        if (n < 0 || n >= this.length) return undefined;
+        return this[n];
+      }
+      if (!Array.prototype.at) Object.defineProperty(Array.prototype, 'at', { value: at, writable: true, configurable: true });
+      if (!String.prototype.at) Object.defineProperty(String.prototype, 'at', { value: at, writable: true, configurable: true });
+      var TypedArrayProto = Object.getPrototypeOf(Int8Array.prototype);
+      if (!TypedArrayProto.at) Object.defineProperty(TypedArrayProto, 'at', { value: at, writable: true, configurable: true });
+    </script>
     <div id="app"></div>
     <script type="module" src="/main.js"></script>
 </body>

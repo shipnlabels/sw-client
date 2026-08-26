@@ -1,11 +1,24 @@
 <template>
-    <v-dialog v-model="dialog">
+    <v-dialog v-model="dialog" :width="content.contentWidth || content.width" persistent>
     <v-card
-      :width="content.width"
-      :height="content.height"
+      class="flash-card"
+      :width="content.contentWidth || content.width"
+      :height="content.contentHeight || content.height"
       v-click-outside="onClickOutside"
     >
-    <object class="gameFrame" height="100%" width="100%" type="application/x-shockwave-flash" :data=content.flash :id=content.panelName :name=content.panelName>
+      <!-- aria-label, not title: a `title` makes Chromium raise a native Win32
+           tooltip, and clicking this button unmounts it in the same tick, so the
+           tooltip never gets a mouse-leave and is orphaned on screen - the stray
+           "Close" box that floats over the app until it is restarted. -->
+      <button
+        v-if="!content.hideClose"
+        class="flash-close"
+        aria-label="Close"
+        @click="$emit('close')"
+      >
+        <i class="fa-solid fa-xmark" />
+      </button>
+    <object :key="content.key" class="gameFrame" :height="content.height" :width="content.width" type="application/x-shockwave-flash" :data="content.flash" v-if="content.flash" :id="content.panelName" :name="content.panelName">
       <param name="menu" value="false">
       <param name="quality" value="high">
       <param name="movie" :value="content.flash">
@@ -66,7 +79,11 @@
   },
     setup() {
       watch(auth, () => {
-        if (!auth.loggedIn) {
+        // NB: the store property is `isLoggedIn`. Checking `auth.loggedIn` read
+        // undefined, so this fired a redirect to /login on EVERY auth store
+        // mutation — including the initialize() the router guard runs on each
+        // navigation — which aborted any in-flight navigation (e.g. entering a space).
+        if (!auth.isLoggedIn) {
           router.push({ name: 'login' });
         }
       });
@@ -81,5 +98,42 @@
 <style>
 .v-overlay__content {
   align-items: center;
+}
+
+/* Size the card to the movie exactly - any padding or rounding shows up as a
+   grey border around the stage. */
+.flash-card {
+  padding: 0 !important;
+  /* Clip the movie's unused stage area rather than showing it as a grey slab. */
+  overflow: hidden;
+  border-radius: 6px;
+  position: relative;
+  background: #000 !important;
+}
+
+.flash-card .gameFrame {
+  display: block;
+}
+
+.flash-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 5;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(20, 36, 63, 0.78);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.flash-close:hover {
+  background: #d9534f;
 }
 </style>

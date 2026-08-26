@@ -1,11 +1,11 @@
 <template>
   <metainfo>
-    <template v-slot:title="{ content }">{{ content ? `${content} | SWX` : `SmallWorlds X Client` }}</template>
+    <template v-slot:title="{ content }">{{ content ? `${content} | SmallWorlds` : `SmallWorlds` }}</template>
   </metainfo>
   <v-app theme="dark" full-height>
     <headerComponent />
     <v-main style="height:100%;" class="profile-container">
-      <router-view @triggerSnackbar="triggerSnackbar" />
+      <router-view :key="$route.fullPath" @triggerSnackbar="triggerSnackbar" />
       <snackBar :snackbar="snackbar" />
     </v-main>   
   </v-app>
@@ -68,17 +68,15 @@ export default {
 ::-webkit-scrollbar {
   display: none;
 }
+/* Page field behind the panels. The old tc_bg.png was a low-resolution
+   screenshot stretched to full width, which read as a blurry smear behind
+   everything. A flat graded field keeps the panels crisp and puts the focus
+   on the content instead of a background photo. */
 .profile-container {
-  /* background-color: #578493; */
-  /* Continue the background from currencyHeader */
-  background-image: url('tc_bg.png'); /* Set the background image */
-  /* Have color overlay the image */
-  background-color: rgba(0, 0, 0, 0.5); 
-  background-size: cover; /* Cover the entire container */
-  background-attachment: fixed; /* Prevent image from moving */
+  background: linear-gradient(180deg, #dfe7f2 0%, #cbd7e8 45%, #bccbe0 100%);
+  background-attachment: fixed;
   height: 100%;
-  /* padding: 20px; */
-  color: white;
+  color: #333;
 }
 #app {
   height: 100%;

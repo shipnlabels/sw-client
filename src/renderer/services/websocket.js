@@ -23,8 +23,10 @@ export const WebSocketService = {
     };
 
     ws.value.onmessage = (e) => {
-      // Decrypt the string
+      // Decrypt the string; decryptMessage returns null for empty/garbled
+      // frames, which we simply ignore rather than propagate as a bad message.
       const decryptedData = this.decryptMessage(e.data);
+      if (decryptedData == null) return;
       console.log('Message from Red5:', decryptedData);
       currentMessage.value = decryptedData;
     };
@@ -68,6 +70,22 @@ export const WebSocketService = {
     return CryptoJS.AES.encrypt(JSON.stringify(message), ENCRYPTION_KEY).toString();
   },
   decryptMessage(encryptedMessage) {
-    return JSON.parse(CryptoJS.AES.decrypt(encryptedMessage, ENCRYPTION_KEY).toString(CryptoJS.enc.Utf8));
+    // Red5 occasionally sends empty or non-JSON frames (keepalives, partial
+    // messages). Decrypting those yielded "" and JSON.parse threw an uncaught
+    // SyntaxError on every one. Guard both the empty case and a parse failure
+    // so a stray frame never takes the socket handler down.
+    if (!encryptedMessage) return null;
+    let text;
+    try {
+      text = CryptoJS.AES.decrypt(encryptedMessage, ENCRYPTION_KEY).toString(CryptoJS.enc.Utf8);
+    } catch (e) {
+      return null;
+    }
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return null;
+    }
   }
 };

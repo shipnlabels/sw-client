@@ -1,6 +1,6 @@
 <template>
     <v-list-item
-      :prepend-avatar="user.defaultAvatar.thumbUrl"
+      :prepend-avatar="user.defaultAvatar?.thumbUrl"
       :title="user.firstName + space + user.lastName"
     ></v-list-item>
 

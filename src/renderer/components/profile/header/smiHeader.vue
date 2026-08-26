@@ -1,6 +1,6 @@
 <template>
   <v-list-item
-    :prepend-avatar="user.$state.defaultAvatar.thumbUrl"
+    :prepend-avatar="user.$state.defaultAvatar?.thumbUrl"
     :title="user.$state.firstName + space + user.$state.lastName"
   ></v-list-item>
   <!-- add user gold + tokens -->

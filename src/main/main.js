@@ -2,9 +2,9 @@
 
 const isDev = require('electron-is-dev');
 
-const DOMAIN = "https://yourdomain.com";
-const API = "https://api.yourdomain.com";
-const userAgent = 'YOUR_CUSTOM_AGENT';
+const DOMAIN = "https://playsmallworlds.com";
+const API = "https://playsmallworlds.com";
+const userAgent = 'SmallWorldsClient';
 let mainWindow = null;
 
 function getMainWindow() {
@@ -24,9 +24,10 @@ const load = async () => {
   try {
    
     require('./tools/storage')();
-    require('./tools/rpc')();
+    // require('./tools/rpc')();
     require('./tools/updater')();
     require('./tools/flash')();
+    app.commandLine.appendSwitch('no-sandbox');
     await app.whenReady();
     require('./tools/userAgent')();
 

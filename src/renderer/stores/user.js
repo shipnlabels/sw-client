@@ -22,6 +22,10 @@ export const useUserStore = defineStore({
       tokensBalance: null,
       sex: null,
       citizenLevel: null,
+      // Staff rank. Display only - the AMF gateway enforces permissions
+      // server-side, so nothing here is a security boundary.
+      role: 'player',
+      staffLevel: 0,
       contentPath: null,
       citizenTitle: null,
       citizenImageExt: null,
@@ -32,11 +36,15 @@ export const useUserStore = defineStore({
       activeAvatars: [],
     });
     window.storage.getItem('USER_INFO').then((value) => {
-      if (value) {
-        const storedUserInfo = JSON.parse(value);
-        for (const key in storedUserInfo) {
-          initialState[key] = storedUserInfo[key];
+      try {
+        if (value && value !== 'undefined') {
+          const storedUserInfo = JSON.parse(value);
+          for (const key in storedUserInfo) {
+            initialState[key] = storedUserInfo[key];
+          }
         }
+      } catch (e) {
+        console.error('Failed to parse USER_INFO in state initialization:', e);
       }
     });
 
@@ -45,11 +53,15 @@ export const useUserStore = defineStore({
   actions: {
     async initialize() {
       window.storage.getItem('USER_INFO').then((value) => {
-        if (value) {
-          const storedUserInfo = JSON.parse(value);
-          for (const key in storedUserInfo) {
-            this[key] = storedUserInfo[key];
+        try {
+          if (value && value !== 'undefined') {
+            const storedUserInfo = JSON.parse(value);
+            for (const key in storedUserInfo) {
+              this[key] = storedUserInfo[key];
+            }
           }
+        } catch (e) {
+          console.error('Failed to parse USER_INFO in initialize:', e);
         }
       });
     },
@@ -78,6 +90,8 @@ export const useUserStore = defineStore({
         tokensBalance: userInfo.tokensBalance,
         sex: userInfo.sex,
         citizenLevel: userInfo.citizenLevel,
+        role: userInfo.role ?? 'player',
+        staffLevel: userInfo.staffLevel ?? 0,
         contentPath: userInfo.contentPath,
         citizenTitle: userInfo.citizenTitle,
         citizenImageExt: userInfo.citizenImageExt,
@@ -324,12 +338,37 @@ export const useUserStore = defineStore({
     isAdmin() {
       const auth = useAuthStore();
       return (
+        this.staffLevel >= 3 ||
         auth.primaryGroupId == 1 ||
         auth.primaryGroupId == 2 ||
         auth.primaryGroupId == 13 ||
         auth.secondaryGroupIds.includes(13)
       );
-      }
+    },
+
+    // Rank helpers. Deliberately actions, not getters - the store already
+    // exposes isAdmin() as an action and callers invoke it, so a getter of
+    // the same name breaks assignment and takes the whole renderer down.
+    // Levels mirror App\Support\Staff on the backend.
+    isStaff() {
+      const auth = useAuthStore();
+      return this.staffLevel >= 1 || [1, 2, 3, 6, 31].includes(Number(auth.primaryGroupId));
+    },
+
+    isModerator() {
+      const auth = useAuthStore();
+      return this.staffLevel >= 2 || [1, 2, 3].includes(Number(auth.primaryGroupId));
+    },
+
+    isDev() {
+      const auth = useAuthStore();
+      return this.staffLevel >= 4 || Number(auth.primaryGroupId) === 31;
+    },
+
+    isOwner() {
+      const auth = useAuthStore();
+      return this.staffLevel >= 5 || Number(auth.primaryGroupId) === 1;
+    }
     },
     
 });

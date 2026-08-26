@@ -10,20 +10,20 @@ module.exports = () => {
     if(process.platform === 'darwin') {
         updater = new MacUpdater({
             provider: "generic",
-            url: "https://content.yourdomain.com/updates/mac/",
+            url: "https://content.playsmallworlds.com/updates/mac/",
             channel: "latest"
         })
     }else if(process.platform === "linux") {
         updater = new DebUpdater({
             provider: "generic",
-            url: "https://content.yourdomain.com/updates/linux/",
+            url: "https://content.playsmallworlds.com/updates/linux/",
             channel: "latest"
         })
     }
     else if(process.platform === "win32") {
         updater = new NsisUpdater({
             provider: "generic",
-            url: "https://content.yourdomain.com/updates/win/",
+            url: "https://content.playsmallworlds.com/updates/win/",
             channel: "latest"
         })
     }

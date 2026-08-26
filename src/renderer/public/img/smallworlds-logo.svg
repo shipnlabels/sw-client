@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 245 82" width="245" height="82"
+     role="img" aria-label="SmallWorlds">
+  <defs>
+    <!-- Ramp sampled from the original SmallWorlds mark: near-white at the
+         cap line, through gold, into burnt orange at the baseline. Both words
+         share it so the block reads as one object. -->
+    <linearGradient id="sw-gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#fffbe8"/>
+      <stop offset="22%"  stop-color="#fdf0c4"/>
+      <stop offset="48%"  stop-color="#f7ca6a"/>
+      <stop offset="74%"  stop-color="#f0a848"/>
+      <stop offset="100%" stop-color="#d86147"/>
+    </linearGradient>
+
+    <filter id="sw-shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#001848"
+                    flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <!-- Three passes per word: deep navy outer stroke, white inner outline,
+       then the gradient face. paint-order keeps strokes behind the fill so
+       the letterforms stay sharp. -->
+  <g filter="url(#sw-shadow)"
+     font-family="'VAG Rounded','Varela Round','Trebuchet MS',sans-serif"
+     font-weight="bold" text-anchor="middle">
+
+    <!-- SMALL is a letter longer than the word this replaced, so the tracking
+         comes down a touch to keep the stack the same width as WORLDS. -->
+    <g font-size="33" letter-spacing="2.5">
+      <text x="124" y="34" fill="#002c55" stroke="#002c55" stroke-width="12"
+            stroke-linejoin="round" paint-order="stroke">SMALL</text>
+      <text x="124" y="34" fill="#ffffff" stroke="#ffffff" stroke-width="6"
+            stroke-linejoin="round" paint-order="stroke">SMALL</text>
+      <text x="124" y="34" fill="url(#sw-gold)">SMALL</text>
+    </g>
+
+    <g font-size="38" letter-spacing="0.5">
+      <text x="122" y="72" fill="#002c55" stroke="#002c55" stroke-width="12"
+            stroke-linejoin="round" paint-order="stroke">WORLDS</text>
+      <text x="122" y="72" fill="#ffffff" stroke="#ffffff" stroke-width="6"
+            stroke-linejoin="round" paint-order="stroke">WORLDS</text>
+      <text x="122" y="72" fill="url(#sw-gold)">WORLDS</text>
+    </g>
+  </g>
+</svg>

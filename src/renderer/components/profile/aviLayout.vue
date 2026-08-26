@@ -2,52 +2,35 @@
   <div >
     <v-row class="d-flex justify-center" >
       <v-col cols="12">
-        <v-card class="pa-4 avi" height="587px" max-height="587">
+        <v-card class="pa-4 avi">
           <!-- <v-row>
             <v-col cols="12">
               <h2 class="text-center">Avatars</h2>
               <v-divider></v-divider>
             </v-col>
           </v-row> -->
-          <v-row justify="end" class="pa-2">
-            <v-tooltip v-model="show_r" location="top" v-if="showEditButton">
-          <template v-slot:activator="{ props }">
-            <v-icon-btn icon="mdi-account-edit-outline" class="swIBtn mr-2" v-bind="props" @click="editAvi" 
-            variant="tonal"></v-icon-btn>
-          </template>
-          <span ref="create">Edit Avatar</span>
-        </v-tooltip>
-        
-        <v-tooltip v-model="show_c" location="top">
-          <template v-slot:activator="{ props }">
-            <v-icon-btn 
-              icon="mdi-account-multiple-plus-outline" 
-              class="swIBtn mr-2" 
-              v-bind="Object.assign(props, { pointerEvents: 'all' })"
-              @click=" createAvi" 
-              variant="tonal" 
-              :disabled="!canCreate"
-              :style="{ pointerEvents: 'auto' }"
-            ></v-icon-btn>
-          </template>
-          <span ref="create" v-if="canCreate">Create Avatar</span>
-          <span ref="create" v-else>Max Avatars Reached</span>
-        </v-tooltip>
-        <v-tooltip v-model="show_d" location="top" v-if="selectedAvatarIndex > 0">
-          <template v-slot:activator="{ props }">
-            <v-icon-btn icon="mdi-delete" class="swIBtn mr-2" color="red" v-bind="props" @click="deleteAvi" variant="tonal"></v-icon-btn>
-          </template>
-          <span ref="create">Delete Avatar</span>
-        </v-tooltip>
-        </v-row>
-    <!--  --> 
-    <v-row class="d-flex justify-center mt-2" v-if="user.activeAvatars.length > 1">
-      <v-col cols="auto">
-        <div class="avatar-counter">
-          {{ selectedAvatarIndex + 1 }} of {{ user.activeAvatars.length }}
-        </div>
-      </v-col>
-    </v-row>
+          <!-- Header ported from SmallVerse's profile-avatar panel: the
+               avatar's name with an edit affordance on the left, and the
+               "n OF m" counter on the right. -->
+          <div class="profile-header">
+            <div class="avatar-header-content">
+              <div class="avatar-name-wrapper">
+                <div class="avatar-name">{{ selectedAvatarName }}</div>
+                <button
+                  class="avatar-edit-btn"
+                  title="Edit Avatar"
+                  :disabled="!showEditButton"
+                  @click="editAvi"
+                >
+                  <i class="fa-solid fa-pen-to-square" />
+                </button>
+              </div>
+              <div class="avatar-counter">
+                {{ selectedAvatarIndex + 1 }} OF {{ user.activeAvatars.length }}
+              </div>
+            </div>
+          </div>
+
     <v-slide-group
       ref="slideGroup"
       v-model="model"
@@ -56,7 +39,7 @@
       show-arrows
       :class="{ 'center-card': user.activeAvatars.length === 1 }"
       mandatory
-      @change="onModelChange"
+      @change="onAvatarChange"
     >
       <!-- Add this to customize the navigation arrows -->
       <template v-slot:prev="{ props }">
@@ -112,6 +95,43 @@
             <v-scale-transition>
               <v-icon v-if="selectedAvatarIndex == 0" color="white" size="48"></v-icon>
             </v-scale-transition>
+          </div>
+        
+          <div class="profile-footer">
+            <button
+              class="avatar-footer-button new-button"
+              title="Create a new avatar"
+              :disabled="!canCreate"
+              @click="createAvi"
+            >
+              <i class="fa-solid fa-plus" /><span>NEW</span>
+            </button>
+            <button
+              class="avatar-footer-button delete-button"
+              title="Remove this avatar"
+              :disabled="selectedAvatarIndex === 0"
+              @click="deleteAvi"
+            >
+              <i class="fa-solid fa-trash" /><span>DELETE</span>
+            </button>
+            <button
+              class="avatar-footer-button default-button"
+              title="Set as your default avatar"
+              :disabled="selectedAvatarIndex === 0"
+              @click="onAvatarChange(selectedAvatarIndex)"
+            >
+              <i class="fa-solid fa-heart" /><span>DEFAULT</span>
+            </button>
+          </div>
+
+          <div class="take-pet-checkbox">
+            <div class="pet-companion-wrapper">
+              <input id="take-pet" v-model="takePet" type="checkbox" />
+              <label for="take-pet">
+                <i class="fa-solid fa-paw" />
+                <span>Enable Pet Companion</span>
+              </label>
+            </div>
           </div>
         </v-card>
       </v-slide-group-item>
@@ -263,7 +283,7 @@
     <find-friends
       :visible="createFriends"
       :user="user.activeAvatars[model]"
-      :friends="user.defaultAvatar.friends"
+      :friends="user.defaultAvatar?.friends || []"
       @close="createFriends = false"
       @triggerSnackbar="triggerSnackbar"
     />
@@ -321,6 +341,8 @@ export default {
   },
   data() {
     return {
+      // Pet companion toggle shown in the panel footer.
+      takePet: false,
       model: 0, // Default to the first avatar
       show_c: false,
       show_p: false,
@@ -923,36 +945,197 @@ export default {
 </script>
 
 <style>
+/* ---- ported from SmallVerse profile.css ---- */
+
+.profile-header {
+  background-color: #1e304d;
+  height: 40px;
+  border-radius: 5px 5px 0 0;
+  margin: -16px -16px 16px -16px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.avatar-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0 15px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.avatar-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.avatar-name {
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.avatar-edit-btn {
+  background: transparent;
+  border: none;
+  color: #7eb8ff;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.avatar-edit-btn:hover:not(:disabled) {
+  background: rgba(126, 184, 255, 0.2);
+  color: #a8d0ff;
+  transform: scale(1.1);
+}
+
+.avatar-edit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.avatar-counter {
+  background-color: #385077;
+  border: 1px solid #5574a7;
+  border-radius: 100px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: white;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.profile-footer {
+  height: 40px;
+  margin: 0 -16px;
+  font-family: 'VAG Rounded';
+  background-color: #ffffff;
+  border-top: 1px solid #d3d3d3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+}
+
+.avatar-footer-button {
+  background-color: #e6e6e6;
+  border: 1px solid #d3d3d3;
+  border-radius: 4px;
+  width: 30%;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  gap: 5px;
+  color: #333;
+}
+
+.avatar-footer-button:hover:not(:disabled) { background-color: #d9d9d9; }
+.avatar-footer-button:disabled { opacity: 0.45; cursor: not-allowed; }
+.avatar-footer-button i { font-size: 12px; }
+.default-button i { color: #fb5cb6; }
+.delete-button i { color: #d9534f; }
+.new-button i { color: #47a403; }
+
+.take-pet-checkbox {
+  margin: 0 -16px -16px -16px;
+  padding: 12px 20px;
+  border-top: 1px solid #d3d3d3;
+}
+
+.pet-companion-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.take-pet-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #47a403;
+}
+
+.take-pet-checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e304d;
+  user-select: none;
+}
+
+.take-pet-checkbox label:hover { color: #47a403; }
+.take-pet-checkbox label i { color: #47a403; font-size: 16px; }
+
+/* Panel shell. The teal gradient came from the open-source build and clashed
+   with everything else on the page - this matches the white/navy card system
+   used by the rest of the profile. */
 .avi{
-  background: linear-gradient(
-    135deg,
-    rgba(20, 149, 179, 0.3),
-    rgba(20, 149, 179, 0.3)
-  );
-  border-radius: 10px;
+  background: var(--sw-panel, #fff);
+  border: 1px solid var(--sw-border, #cfcfcf);
+  border-radius: 5px;
+  color: #333;
+}
+
+/* Vuetify paints its own surface colour onto v-card; override it so the panel
+   is actually white rather than the dark theme surface. */
+.avi.v-card,
+.avi .v-card__underlay,
+.avi > .v-card__overlay {
+  background-color: var(--sw-panel, #fff) !important;
+  color: #333 !important;
+}
+
+.avi .v-card-title,
+.avi p,
+.avi span,
+.avi .avatar-counter {
+  color: #333;
 }
 .avi-bg-selected
 {
-  /* Make the image  have a 0099cc overlay on the image
-  */
-  background-color: #0099cc;
-  
-  /* Add a border */
-  border: 3px solid #0099cc;
-  border-radius: 30px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-
-
+  border: 3px solid var(--sw-green, #47a403);
+  border-radius: 6px;
+  box-shadow: 0 0 0 3px rgba(71, 164, 3, 0.18),
+              0 4px 12px rgba(30, 48, 77, 0.2);
 }
 .avi-bg {
-  background-color: #f5f5f5;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  box-shadow: inset 0 2px 8px rgba(30, 48, 77, 0.12);
   cursor: pointer;
-  transition: background-color 0.3s;
-  background: url(/images/avatar_background.jpg);
-  background-size: cover;
-  background-position: center;
+  transition: box-shadow 0.2s, transform 0.2s;
+  /* Soft studio backdrop instead of the wood-plank photo - the avatar is the
+     subject, the stage should recede. */
+  background: radial-gradient(circle at 50% 38%, #ffffff 0%, #e8eef7 60%, #d5deec 100%);
+  border: 1px solid var(--sw-border, #cfcfcf);
+}
+
+.avi-bg:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 2px 8px rgba(30, 48, 77, 0.12),
+              0 6px 14px rgba(30, 48, 77, 0.18);
 }
 .v-overlay__content {
   align-items: center;
@@ -984,17 +1167,25 @@ export default {
 }  /* Added missing closing brace for the .hidden-avatar:hover class */
 
 
-/* Modify the slide group arrows to make them more visible */
+/* Carousel arrows. They were white, which was fine on the old teal card and
+   invisible on the white panel. Narrow fixed gutters too, so the arrows sit
+   inside the panel instead of being clipped by it. */
 .v-slide-group__prev,
 .v-slide-group__next {
-  /* background-color: rgba(0, 153, 204, 0.3); */
   border-radius: 50%;
-  min-width: 36px !important;
-  min-height: 36px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
+  min-height: 30px !important;
+  flex: 0 0 30px !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
-  color: white !important;
+  color: var(--sw-navy, #1e304d) !important;
+}
+
+.v-slide-group__prev--disabled,
+.v-slide-group__next--disabled {
+  opacity: 0.25;
 }
 
 
@@ -1009,21 +1200,21 @@ export default {
   justify-content: center;
 }
 
-/* Ensure the avatar container has proper alignment */
+/* Fluid rather than pinned to 340px: the panel is 340px wide including its
+   own padding, so a fixed 340px track overflowed and clipped the right arrow. */
 .v-slide-group__container {
   height: 270px;
   display: flex;
-  width: 1px !important;  
-  /* Add this to prevent overflow */  
-  overflow: hidden;  
-  flex-direction: row;  
-  align-items: center;  
-  overflow: hidden;  
-}  
+  width: 100% !important;
+  overflow: hidden;
+  flex-direction: row;
+  align-items: center;
+}
+
 .v-slide-group
 {
-  width:340px !important;
-  max-width: 350px !important;
+  width: 100% !important;
+  max-width: 100% !important;
   margin: 0 auto !important;
 }
 

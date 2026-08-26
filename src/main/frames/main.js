@@ -19,7 +19,12 @@ module.exports = () => {
             preload: path.join(__dirname, "../preload/app.js"), // use a preload script
             plugins: true,
             worldSafeExecuteJavaScript: true,
-            backgroundThrottling: false
+            backgroundThrottling: false,
+            // The page is served from :5173 but the SWF and all game assets come
+            // from :8000 — a different origin. SmallVerse's own shell disables
+            // webSecurity for exactly this reason.
+            webSecurity: false,
+            allowRunningInsecureContent: true
         },
         frame: false,
         show: true,
@@ -54,7 +59,7 @@ module.exports = () => {
     });
     if (process.env.NODE_ENV === 'development') {
         const rendererPort = process.argv[2];
-        mainWindow.loadURL(`http://localhost.charlesproxy.com:${rendererPort}`);
+        mainWindow.loadURL(`http://localhost:${rendererPort}`);
       }
       else
       {
@@ -62,6 +67,9 @@ module.exports = () => {
       }
 
     mainWindow.webContents.userAgent = userAgent;
+    mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+        console.log(`[RENDERER CONSOLE]: ${message}`);
+    });
 
     if (isDev) mainWindow.webContents.openDevTools();
 
@@ -81,6 +89,10 @@ module.exports = () => {
     });
     ipcMain.handle("app_custom", (e, SWSID, url, width, height) => {
         require('./custom')(mainWindow, SWSID, url, width, height);
+    });
+
+    ipcMain.handle("set_rpc", (e, data) => {
+        console.log("RPC initialized", data);
     });
 
     return mainWindow;

@@ -46,6 +46,7 @@ $.fn.exists = function () {
  * @returns Path portion of the current URL.
  */
 function getCurrentPath() {
+	console.log('[SWX-BRIDGE] getCurrentPath called by Flash, href=' + window.location.href);
 	var url = document.createElement('a');
 	url.href = window.location.href;
 
@@ -61,10 +62,14 @@ function getCurrentPath() {
 	if (currentPath.indexOf('/home') == 0 ||
 			currentPath.indexOf('/space') == 0 ||
 			currentPath.indexOf('/settings') == 0 ||
-                        currentPath.indexOf('/pet') == 0)
+                        currentPath.indexOf('/pet') == 0) {
+		console.log('[SWX-BRIDGE] getCurrentPath returning: ' + currentPath);
 		return currentPath;
-	else
+	}
+	else {
+		console.log('[SWX-BRIDGE] getCurrentPath returning null for: ' + currentPath);
 		return null;
+	}
 }
 
 /**
@@ -405,6 +410,23 @@ function clearSnapshot() {
  * @param prefix Localised title prefix.
  */
 function setPageTitle(desc, prefix) {
+	// DIAGNOSTIC: JavascriptInterface.setPageTitle is also registered inside the
+	// SWF as the uncaughtError handler, so Flash exceptions that would otherwise
+	// be swallowed silently arrive here. Anything that isn't a plain title string
+	// is an error report.
+	try {
+		if (desc && typeof desc === 'object') {
+			console.log('[SWF-ERROR] uncaught:', JSON.stringify(desc));
+			return;
+		}
+		if (typeof desc === 'string' && desc.indexOf('Error') !== -1) {
+			console.log('[SWF-ERROR] uncaught:', desc);
+			return;
+		}
+	} catch (e) {
+		console.log('[SWF-ERROR] uncaught (unserializable):', String(desc));
+		return;
+	}
 	if (!desc || desc == '')
 		document.title = prefix;
 	else

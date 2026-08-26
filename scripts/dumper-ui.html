@@ -1,0 +1,13 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head><title>Asset Dumper</title></head>
+        <body style="font-family: sans-serif; background: #222; color: #ddd; padding: 20px;">
+            <h2>SmallWorlds Asset Dumper</h2>
+            <p>Enter the URL of the game (e.g., http://localhost:5173 or a live remake URL) to start dumping assets:</p>
+            <input type="text" id="url" value="http://localhost:5173" style="width: 80%; padding: 10px; font-size: 16px;">
+            <button onclick="window.location.href = document.getElementById('url').value" style="padding: 10px; font-size: 16px; cursor: pointer;">Go</button>
+            <p><small>All loaded assets will be saved to the <code>asset_dump</code> folder in your project directory.</small></p>
+        </body>
+        </html>
+    

@@ -47,7 +47,11 @@ watch(
 
 // watch to see if user changes then recalcuate the xpPercentage
 watch(user, (newVal) => {
-  if (newVal.defaultAvatar.avatarXPs.primary.levelXP == 0) {
+  if (!newVal?.defaultAvatar?.avatarXPs?.primary) {
+    xpPercentage.value = 0;
+    return;
+  }
+  if (newVal.defaultAvatar.avatarXPs.primary.xp == 0) {
     xpPercentage.value = 0;
     return;
   }
@@ -65,9 +69,9 @@ watch(WebSocketService.message, (newVal) => {
 // watch for spaceName changes
 
 const isLoggedIn = computed(() => auth.isLoggedIn);
-const hasPet = computed(() => user.defaultAvatar.takePet);
-const hasHeader = computed(() => user.defaultAvatar.header);
-const hasExperiment = computed(() => user.defaultAvatar.experiment);
+const hasPet = computed(() => !!user.defaultAvatar?.takePet);
+const hasHeader = computed(() => !!user.defaultAvatar?.header);
+const hasExperiment = computed(() => !!user.defaultAvatar?.experiment);
 const isAdmin = computed(() => {
   return (
     auth.primaryGroupId == 1 ||
@@ -250,15 +254,15 @@ onUnmounted(() => {
     </div>
 
      
-    <v-btn v-if="isLoggedIn" icon @click="toggleDrawer" style="-webkit-app-region: no-drag">
-          <v-icon size="20">mdi-menu</v-icon>
-        </v-btn>
+    <!-- Hamburger removed: navigation and sign-out now live in the main
+             chrome bar, and the drawer's remaining entries were dead - the
+             settings button pushed to a 'settings' route that does not exist. -->
 
 
  
 <div class="title-container">
     <div class="window-title">
-      {{ (spaceName.length > 0) ? spaceName + ' | SmallWorlds X' : (windowTitle + ' | SmallWorlds X') }}
+      {{ (spaceName.length > 0) ? spaceName + ' | SmallWorlds' : (windowTitle + ' | SmallWorlds') }}
     </div>        
 
     <v-btn icon @click="reload" class="reload-btn" style="-webkit-app-region: no-drag">
@@ -286,17 +290,17 @@ onUnmounted(() => {
         >
           <template v-slot:default="{ value }">
             <div class="progress-content">
-              <span class="level-text">{{ user.defaultAvatar.avatarXPs.primary.level }}</span>
+              <span class="level-text">{{ user.defaultAvatar?.avatarXPs?.primary?.level }}</span>
             </div>
           </template>
         </v-progress-linear>
       </div>
   </template>
   <div class="tooltip-content">
-    You are Level {{ user.defaultAvatar.avatarXPs.primary.level }} with <CommaValue :value="user.defaultAvatar.avatarXPs.primary.levelXP" />xp
-    <br />Next Level: <CommaValue :value="user.defaultAvatar.avatarXPs.primary.xp" />xp
+    You are Level {{ user.defaultAvatar?.avatarXPs?.primary?.level }} with <CommaValue :value="user.defaultAvatar?.avatarXPs?.primary?.levelXP" />xp
+    <br />Next Level: <CommaValue :value="user.defaultAvatar?.avatarXPs?.primary?.xp" />xp
     <br/>
-    (<CommaValue :value="(user.defaultAvatar.avatarXPs.primary.xp - user.defaultAvatar.avatarXPs.primary.levelXP)" />xp to go)
+    (<CommaValue :value="(user.defaultAvatar?.avatarXPs?.primary?.xp - user.defaultAvatar?.avatarXPs?.primary?.levelXP)" />xp to go)
   </div>
 </v-tooltip>
   </div>
@@ -416,8 +420,8 @@ export default {
       closeColor: '#ff5f57',
       minColor: '#ffbd2e', 
       maxColor: '#28c940',
-      title: 'SWX',
-      windowTitle: 'SmallWorlds X',
+      title: 'SmallWorlds',
+      windowTitle: 'SmallWorlds',
     };
   },
 

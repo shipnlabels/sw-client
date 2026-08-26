@@ -34,15 +34,21 @@ export const useAuthStore = defineStore({
   actions: {
     async initialize()
     {
-      const storedUserInfo = await window.storage.getItem('AUTH_STATE') || '{}';
-      const storedAuthInfo = JSON.parse(storedUserInfo);
-      this.email = storedAuthInfo.email;
-      this.isLoggedIn = storedAuthInfo.isLoggedIn;
-      this.token = storedAuthInfo.token;
-      this.primaryGroupId = storedAuthInfo.primaryGroupId;
-      this.secondaryGroupIds = storedAuthInfo.secondaryGroupIds;
-      this.session = storedAuthInfo.session;
-      
+      const raw = await window.storage.getItem('AUTH_STATE');
+      let storedAuthInfo = {};
+      try {
+        // guard: getItem can return undefined/'undefined'/corrupt JSON, and a
+        // throw here aborts the router guard that awaits this.
+        if (raw && raw !== 'undefined') storedAuthInfo = JSON.parse(raw) || {};
+      } catch (e) {
+        console.error('Could not parse AUTH_STATE, ignoring:', e);
+        storedAuthInfo = {};
+      }
+      // only overwrite fields that are actually present — a failed/empty read
+      // must not clobber a valid in-memory session and log the user out.
+      for (const key of ['email','isLoggedIn','token','primaryGroupId','secondaryGroupIds','session']) {
+        if (storedAuthInfo[key] !== undefined) this[key] = storedAuthInfo[key];
+      }
     },
     updateState(data) {
       let newAuthState = { ...this.$state, ...data };

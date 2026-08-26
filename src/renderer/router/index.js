@@ -11,8 +11,11 @@ const routes = [
   {
     path: '/space/:id/',
     name: 'space',
-    component: () => import('../views/SpaceView.vue'),
-    
+    component: () =>
+      import('../views/SpaceView.vue').catch((e) => {
+        console.error('[SWX-ROUTER] SpaceView module FAILED to load:', e);
+        throw e;
+      }),
   },
   {
     path: '/invite',
@@ -75,6 +78,18 @@ router.beforeEach(authMiddleware);
 router.beforeEach((to, from) => {
   console.log(`Navigating from ${from.path} to ${to.path}`);
   return true;
+});
+
+// Surface navigation failures that vue-router otherwise swallows silently.
+router.onError((err) => {
+  console.error('[SWX-ROUTER] navigation error:', err);
+});
+router.afterEach((to, from, failure) => {
+  if (failure) {
+    console.error('[SWX-ROUTER] navigation FAILED to ' + to.path + ':', failure);
+  } else {
+    console.log('[SWX-ROUTER] navigation OK -> ' + to.path);
+  }
 });
 
 export default router;
