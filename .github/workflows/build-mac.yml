@@ -13,6 +13,9 @@ on:
         type: choice
         options: [x64, arm64]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     # Host architecture does not have to match the target: electron-builder
@@ -94,6 +97,23 @@ jobs:
             dist/*.zip
             dist/latest-mac.yml
           if-no-files-found: error
+
+      - name: Publish the DMG as a release asset
+        # Downloading a workflow artifact needs an authenticated API call, so the
+        # installer cannot be pulled onto the web server without credentials.
+        # Both repos are public, so a release asset gets a plain public URL and
+        # the server can fetch it directly. Uses the token Actions already
+        # provides - nothing to configure.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DMG=$(find dist -maxdepth 1 -name "*.dmg" -print -quit)
+          test -n "$DMG" || { echo "no dmg produced"; exit 1; }
+          TAG="mac-${{ inputs.arch }}-$(date -u +%Y%m%d-%H%M%S)"
+          gh release create "$TAG" "$DMG" \
+            --title "macOS client ($TAG)" \
+            --notes "Ad-hoc signed ${{ inputs.arch }} build. Drag to /Applications, then right-click open."
+          echo "Published release **$TAG**" >> $GITHUB_STEP_SUMMARY
 
       - name: Notes
         run: |
