@@ -13,6 +13,9 @@ on:
         type: choice
         options: [x64, arm64]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     # Host architecture does not have to match the target: electron-builder
@@ -54,11 +57,34 @@ jobs:
         run: npm run build
 
       - name: Build macOS installer
-        # Unsigned: no Apple Developer certificate configured. Gatekeeper will
-        # require right-click -> Open on first launch. See the job summary.
+        # No Apple Developer certificate, so this cannot be notarised. It is
+        # still ad-hoc signed below: macOS 13+ kills an Electron app whose
+        # bundle has no signature at all, which looks to the user like the app
+        # simply doing nothing when launched.
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: npx electron-builder --mac --${{ inputs.arch }} --publish never
+        run: npx electron-builder --mac --${{ inputs.arch }} --publish never --dir
+
+      - name: Ad-hoc sign the app bundle
+        # The Flash plugin is placed in Contents/plugins (see extraResources in
+        # package.json) because flash.js resolves it as resourcesPath/../plugins
+        # on every platform. That is a non-standard spot inside a .app, so the
+        # bundle has to be re-signed after it is dropped in or the resource
+        # envelope does not match. Sign inside-out: nested code first, then the
+        # outer bundle.
+        run: |
+          APP=$(find dist -maxdepth 2 -name "*.app" -print -quit)
+          test -n "$APP" || { echo "no .app produced"; exit 1; }
+          echo "signing $APP"
+          find "$APP/Contents/Frameworks" -name "*.framework" -maxdepth 1 -print0 2>/dev/null             | xargs -0 -I{} codesign --force --sign - --timestamp=none {} || true
+          find "$APP/Contents/Frameworks" -name "*.app" -maxdepth 1 -print0 2>/dev/null             | xargs -0 -I{} codesign --force --deep --sign - --timestamp=none {} || true
+          codesign --force --deep --sign - --timestamp=none "$APP"
+          echo "--- verification ---"
+          codesign -dv --verbose=2 "$APP" 2>&1 | head -8
+          codesign --verify --deep --strict --verbose=2 "$APP" 2>&1 | head -8
+
+      - name: Package the signed app into a DMG
+        run: npx electron-builder --mac --${{ inputs.arch }} --publish never --prepackaged "$(find dist -maxdepth 2 -name '*.app' -print -quit)"
 
       - name: Show what was produced
         run: ls -lh dist/*.dmg dist/*.zip 2>/dev/null || ls -lh dist
@@ -72,12 +98,31 @@ jobs:
             dist/latest-mac.yml
           if-no-files-found: error
 
+      - name: Publish the DMG as a release asset
+        # Downloading a workflow artifact needs an authenticated API call, so the
+        # installer cannot be pulled onto the web server without credentials.
+        # Both repos are public, so a release asset gets a plain public URL and
+        # the server can fetch it directly. Uses the token Actions already
+        # provides - nothing to configure.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DMG=$(find dist -maxdepth 1 -name "*.dmg" -print -quit)
+          test -n "$DMG" || { echo "no dmg produced"; exit 1; }
+          TAG="mac-${{ inputs.arch }}-$(date -u +%Y%m%d-%H%M%S)"
+          gh release create "$TAG" "$DMG" \
+            --title "macOS client ($TAG)" \
+            --notes "Ad-hoc signed ${{ inputs.arch }} build. Drag to /Applications, then right-click open."
+          echo "Published release **$TAG**" >> $GITHUB_STEP_SUMMARY
+
       - name: Notes
         run: |
           echo "### macOS build complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The app is **unsigned**. On first launch macOS will refuse to open it." >> $GITHUB_STEP_SUMMARY
-          echo "Tell testers to right-click the app and choose **Open**, then confirm." >> $GITHUB_STEP_SUMMARY
+          echo "The app is **ad-hoc signed, not notarised**. On first launch macOS" >> $GITHUB_STEP_SUMMARY
+          echo "still warns; tell testers to right-click the app and choose **Open**," >> $GITHUB_STEP_SUMMARY
+          echo "or approve it under System Settings -> Privacy & Security." >> $GITHUB_STEP_SUMMARY
+          echo "Drag it to /Applications first - launching from the mounted DMG fails." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Signing needs an Apple Developer account (99 USD/yr); notarising" >> $GITHUB_STEP_SUMMARY
           echo "additionally requires an app-specific password." >> $GITHUB_STEP_SUMMARY

@@ -88,7 +88,10 @@
     "productName": "SmallWorlds",
     "mac": {
       "category": "public.app-category.developer-tools",
-      "type": "distribution"
+      "type": "distribution",
+      "extendInfo": {
+        "LSRequiresNativeExecution": false
+      }
     },
     "publish": {
       "provider": "github"
