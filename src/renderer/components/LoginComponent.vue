@@ -1,155 +1,114 @@
 <template>
-  <!-- Login form -->
+  <div class="sw-page login-page">
+    <div class="sw-page-background" />
 
-  <v-row justify="center" no-gutters>
-    <!-- shift page down -->
-    <v-col cols="6">
-      <v-img aspect-ratio="1" class="white--text align-end">
-        <v-card
-          class="mx-auto"
-          height="100"
-          max-width="200"
-          color="transparent"
-          elevation="0"
-        ></v-card>
-        <v-row>
-          <v-card
-            color="transparent"
-            class="px-8 pb-12 mx-auto mt-5"
-            elevation="0"
-          >
-            <!-- <v-card color="transparent" elevation="0" class="px-8 pb-12 mx-auto"> -->
-            <v-card-title class="text-center">
-              <v-avatar
-                size="104"
-                class="mb-5 text-center"
-                :image="img"
-                style="
-                  background: #00000052;
-                  border-radius: 50%;
-                  border: solid #bbb 1px;
-                "
-              />
-              <h4 class="display-1 font-weight-thin mb-4">Welcome to your digital journey. <br/>Where every login is a new adventure.</h4>
-            </v-card-title>
-            <!-- <p class="subheading font-weight-thin mb-4">
-              Welcome back! Login to your account to continue.
-            </p> -->
+    <div class="login-wrap">
+      <div class="sw-panel login-card">
+        <div class="sw-panel-header">
+          <div class="sw-panel-title">Sign in</div>
+          <div class="sw-online" style="margin-left: auto">
+            <span class="sw-online-dot" :class="{ 'is-offline': !online }" />
+            <span>{{ online ? 'Servers online' : 'Connecting…' }}</span>
+          </div>
+        </div>
 
-            <v-form @submit.prevent="handleLogin">
-              <v-text-field
-                v-model.trim="credentials.email"
-                label="Email"
-                type="email"
-                :rules="emailRules"
-                prepend-inner-icon="mdi-email"
-                variant="outlined"
-                required
-              />
-              <v-text-field
-                v-model="credentials.password"
-                label="Password"
-                type="password"
-                :rules="passwordRules"
-                required
-                prepend-inner-icon="mdi-eye"
-                variant="outlined"
-                @keydown.enter="handleLogin"
-              />
-              <!-- remember me btn to left -->
-              <!-- <v-col cols="12" sm="6" text-sm-left> -->
-              <!-- <v-checkbox text-sm-left label="Remember me" color="primary" /> -->
+        <h1 class="welcome">Welcome back</h1>
+        <p class="tagline">Your world is waiting.</p>
 
-              <!-- </v-col> -->
-              <!--  -->
-              <!-- remember me checkbox -->
-              <div class="mb-4">
-                <div class="d-flex justify-space-between align-center">
-                  <!-- <v-checkbox label="Remember me" color="blue" v-model="credentials.remember"/> -->
-                
-                <!-- <v-col sm="5" text-sm-right> -->
-                  <!-- make it align on same as remember me text -->
-                   <!-- Forgot  -->
-                    <router-link class="text-decoration-none text-primary text-body-2 font-weight-medium" to="/forgot" @click.stop >Forgot password?</router-link>
-                <!-- </v-col> -->
-              </div>
-              </div>
-              <v-row>
-                <v-col cols="12" class="text-sm-right">
-                  <v-btn variant="text" color="green" @click="handleLogin" block
-                    >Login</v-btn
-                  >
-                </v-col>
-              </v-row>
-            </v-form>
-            <v-row>
-              <v-col cols="12">
-                <v-btn variant="text" color="blue" to="invite" block
-                  >Invite Code</v-btn
-                >
-              </v-col>
-            </v-row>
-          </v-card>
-        </v-row>
+        <form @submit.prevent="handleLogin">
+          <label class="field">
+            <span class="field-label">Email</span>
+            <input
+              v-model.trim="credentials.email"
+              type="email"
+              autocomplete="username"
+              placeholder="you@example.com"
+              :class="{ 'has-error': touched.email && !emailV }"
+            />
+            <span v-if="touched.email && !emailV" class="field-error">
+              Enter a valid email address.
+            </span>
+          </label>
 
-                  
-        
-        <!-- add discord button in a v-card -->
-        <v-row justify="center" no-gutters>
-          <!-- <v-card
-            color="transparent"
-            elevation="0"
-            class="mt-15"
-          > -->
-          <!-- icon button -->
-          <!-- center it -->
-          <v-btn
-            icon
-            class="mx-auto"
-            href="discord://-/invite/"
-          >
-          <i class="fa-brands fa-discord"></i></v-btn>
-          <!-- </v-card> -->
-        </v-row>
-        <v-row>
-              <v-col cols="1"></v-col>
-              <v-col cols="10">
-                <v-btn variant="text" color="blue" block
-                  >Made with ♥️ in USA</v-btn>
-                
-              </v-col>
-              <v-col cols="1"></v-col>
-            </v-row>
-      </v-img>
-    </v-col>
+          <label class="field">
+            <span class="field-label">Password</span>
+            <input
+              v-model="credentials.password"
+              :type="showPassword ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              :class="{ 'has-error': touched.password && !passwordV }"
+              @keydown.enter="handleLogin"
+            />
+            <button
+              type="button"
+              class="peek"
+              :aria-label="showPassword ? 'Hide password' : 'Show password'"
+              @click="showPassword = !showPassword"
+            >
+              <i :class="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'" />
+            </button>
+            <span v-if="touched.password && !passwordV" class="field-error">
+              Password must be at least 6 characters.
+            </span>
+          </label>
 
-    <!-- add an random image to the right -->
+          <div class="row-between">
+            <label class="remember">
+              <input v-model="credentials.remember" type="checkbox" />
+              <span>Remember me</span>
+            </label>
+            <router-link class="sw-link" to="/forgot">Forgot password?</router-link>
+          </div>
 
-    <v-col cols="6">
-      <v-img
-        src="intro.png"
-        style="height: -webkit-fill-available"
-        alt="Welcome"
-      />
-    </v-col>
-  </v-row>
-  <snackBar :snackbar="snackbar" />
+          <button class="sw-btn-green login-btn" type="submit" :disabled="busy">
+            {{ busy ? 'Signing in…' : 'Enter World' }}
+          </button>
+        </form>
+
+        <div class="sw-panel-footer login-footer">
+          <span class="footer-prompt">New here?</span>
+          <router-link class="sw-btn-quiet create-btn" to="/register">
+            <i class="fa-solid fa-user-plus" />
+            <span>Create an account</span>
+          </router-link>
+        </div>
+      </div>
+    </div>
+
+    <snackBar :snackbar="snackbar" />
+  </div>
 </template>
 
 <script>
+import { postAuthDestination } from '../browser-shim.js';
 import { reactive } from 'vue';
 import { useAuthStore } from '@stores/auth';
 import snackBar from '@components/utils/snackBar.vue';
-import { toRaw } from 'vue';
-// import { JSON } from 'core-js';
+
 const auth = useAuthStore();
+
+const EMAIL_RE =
+  /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/;
+
 export default {
   name: 'LoginComponent',
-  components: {
-    snackBar,
-  },
+  components: { snackBar },
+
   data: () => ({
-    session: '',
+    credentials: reactive({
+      email: '',
+      password: '',
+      remember: false,
+    }),
+    // Tracked explicitly rather than assigned ad hoc, so the template can
+    // show per-field errors only after the user has actually typed.
+    touched: { email: false, password: false },
+    emailV: false,
+    passwordV: false,
+    showPassword: false,
+    busy: false,
+    online: true,
     snackbar: {
       visible: false,
       text: '',
@@ -158,38 +117,6 @@ export default {
       timeout: null,
       offset: '',
     },
-    //grab data.url from api link and set image
-    credentials: reactive({
-      email: '',
-      password: '',
-      remember: false,
-    }),
-    doInterval: true,
-    img: '',
-    emailRules: [
-      (value) => {
-        if (value) return true;
-
-        return 'E-mail is required.';
-      },
-      (value) => {
-        if (/.+@.+\..+/.test(value)) return true;
-
-        return 'E-mail must be valid.';
-      },
-    ],
-    passwordRules: [
-      (value) => {
-        if (value) return true;
-
-        return 'Password is required.';
-      },
-      (value) => {
-        if (value.length >= 6) return true;
-
-        return 'Password must be at least 6 characters.';
-      },
-    ],
   }),
 
   methods: {
@@ -205,34 +132,16 @@ export default {
       }, this.snackbar.timeout);
     },
 
-    checkSession()
-    {
-
-      window.storage.getItem('SWSID').then((value) => {
-        this.session = toRaw(JSON.parse(value));
-      });
-      if (this.session.SWSID === null) return;
-      // check if session.expires_at is not expired
-      // if expired, remove SWSID from localstorage
-      // if not expired, redirect to profile
-      if (this.session.expires_at < Date.now()) {
-        window.storage.removeItem('SWSID');
-      } else {
-        auth.isLogged = true;
-        this.$router.push('/profile');
-      }
-    },
-
     async handleLogin() {
-      // is email valid and password is at least 6 characters?
-      if (!this.emailV) this.Vtext = 'Email is required.';
-      else if (!this.passwordV) this.Vtext = 'Password must be at least 6 characters.';
-      else this.Vtext = 'Invalid credentials.';
+      this.touched.email = true;
+      this.touched.password = true;
 
       if (!this.emailV || !this.passwordV) {
         this.triggerSnackbar({
           visible: true,
-          text: this.Vtext,
+          text: !this.emailV
+            ? 'Enter a valid email address.'
+            : 'Password must be at least 6 characters.',
           color: 'red',
           timeout: 6000,
           icon: 'mdi-alert-circle',
@@ -240,28 +149,23 @@ export default {
         });
         return;
       }
+
+      this.busy = true;
       try {
-        // TODO: edit this to check for valid SWSID
-        if (await auth.login(this.credentials)){
-
-      //     window.storage.getItem('SWSID').then((value) => {
-      //   this.session = toRaw(JSON.parse(value));
-      // });
-      // if (this.session != null) 
-        // await window.storage.removeItem('SWSID');
-          // set SWSID to localstorage
-        await window.storage.setItem('SWSID', JSON.stringify(auth.session));
-          // get SWSID from localstorage
-          // await window.storage.getItem('SWSID').then((value) => {
-            // this.session = toRaw(JSON.parse(value));
-          // });
-          //redirect to profile
-          window.location.href = '/profile';
-
-
+        if (await auth.login(this.credentials)) {
+          await window.storage.setItem('SWSID', JSON.stringify(auth.session));
+          window.location.href = postAuthDestination();
+          return;
         }
-        else
-        return;
+        // auth.login resolved falsy - credentials were rejected
+        this.triggerSnackbar({
+          visible: true,
+          text: 'Invalid credentials.',
+          color: 'red',
+          timeout: 6000,
+          icon: 'mdi-alert-circle',
+          offset: 'left',
+        });
       } catch (error) {
         this.triggerSnackbar({
           visible: true,
@@ -272,120 +176,190 @@ export default {
           offset: 'left',
         });
         console.log(error);
-        console.log('Invalid credentials. Login.vue');
+      } finally {
+        this.busy = false;
       }
-
-      this.doInterval = false;
-
-      // go to profile, but refresh header component
     },
-    setUserImg(email) {
-      fetch(`/api/avatar/head/${email}`)
-        .then((response) => response.json())
-        .then((data) => {
-          this.img = '';
-          this.img = data.url;
+
+    // Single cheap probe purely to drive the "Servers online" dot in the
+    // header - no polling, no avatar artwork.
+    checkOnline() {
+      fetch('/api/space/time')
+        .then((r) => {
+          this.online = r.ok;
+        })
+        .catch(() => {
+          this.online = false;
         });
     },
-    setRandom() {
-      //if element does not have class pause
-      // if (!document.getElementsByClassName('').className.includes('pause')) {
-      if (this.doInterval) {
-        fetch('/api/avatar/head')
-          .then((response) => response.json())
-          .then((data) => {
-            this.img = '';
-            this.img = data.url;
-          });
-      } else if (this.emailV) {
-        clearInterval();
-      } else this.doInterval = true;
-      // }
-
-      // set img to resp data
-    },
-
-    sleep(ms) {
-      return new Promise((resolve) => setTimeout(resolve, ms));
-    }, 
-    async auth(event) {
-      if(event.origin !== import.meta.env.VITE_DEFAULT_URL) return;
-      this.credentials.email = event.data.data.username;
-      this.credentials.password = event.data.data.password;
-      if (this.credentials.email === null || this.credentials.password === null) return;
-      // TODO: edit this to check for valid SWSID
-      if (await auth.login(this.credentials)){
-          localStorage.setItem('remember', JSON.stringify({value: true}));
-          this.$router.push('/profile');
-        }
-    },
   },
 
-  unmounted() {
-    // stop setRandom from running
-    this.doInterval = false;
-    clearInterval();
-  },
-
-  async mounted() {
-    //call parent function triggerSnackbar
-
-    this.setRandom();
-    setInterval(() => {
-      this.setRandom();
-    }, 10000);
-    // try {
-    //   // check if user is logged in
-    //   // if logged in, redirect to profile
-    //   // if not logged in, stay on login page
-    //   this.checkSession();
-    // } catch (error) {
-    //   console.log(error);
-    // }
-    // this.checkSession();
-    // window.app.login();
-    // window.addEventListener('message', this.auth, false);
-
-  },
-
-  computed: {
-    authUser() {
-      return auth.authUser;
-    },
+  mounted() {
+    this.checkOnline();
   },
 
   watch: {
     'credentials.email': function (val) {
-      //is email valid?
-      //has @ and .com
-      if (
-        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/.test(
-          val
-        )
-      ) {
-        this.doInterval = false;
-        this.emailV = true;
-        this.setUserImg(val);
-      } else {
-        this.emailV = false;
-      }
+      this.emailV = EMAIL_RE.test(val);
+      if (val) this.touched.email = true;
     },
     'credentials.password': function (val) {
-      if (val.length >= 6) {
-        this.doInterval = false;
-        this.passwordV = true;
-      } else {
-        this.passwordV = false;
-      }
-    },
-    'credentials.remember': function (val) {
-      if (val) {
-        this.remember = true;
-      } else {
-        this.remember = false;
-      }
+      this.passwordV = val.length >= 6;
+      if (val) this.touched.password = true;
     },
   },
-  emits: ['triggerSnackbar'],
 };
 </script>
+
+<style scoped>
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.login-wrap {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+/* Header sits flush against the welcome block now that nothing overlaps it. */
+.login-card .sw-panel-header {
+  margin-bottom: 24px;
+}
+
+.welcome {
+  font-family: var(--sw-font);
+  font-size: 22pt;
+  color: var(--sw-navy);
+  text-align: center;
+  margin: 0;
+}
+
+.tagline {
+  text-align: center;
+  color: #7a7a7a;
+  font-size: 13px;
+  margin: 6px 0 24px 0;
+}
+
+.field {
+  display: block;
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.field input[type='email'],
+.field input[type='password'],
+.field input[type='text'] {
+  width: 100%;
+  height: 38px;
+  padding: 0 38px 0 12px;
+  border: 1px solid var(--sw-border-soft);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.field input:focus {
+  border-color: var(--sw-steel);
+  box-shadow: 0 0 0 3px rgba(85, 116, 167, 0.18);
+}
+
+.field input.has-error {
+  border-color: #d9534f;
+}
+
+.field-error {
+  display: block;
+  color: #d9534f;
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+.peek {
+  position: absolute;
+  right: 8px;
+  top: 26px;
+  height: 32px;
+  width: 28px;
+  background: none;
+  border: none;
+  color: #9aa9c0;
+  cursor: pointer;
+}
+
+.peek:hover {
+  color: var(--sw-steel);
+}
+
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+}
+
+.remember input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--sw-green);
+  cursor: pointer;
+}
+
+.login-btn {
+  width: 100%;
+  height: 45px;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.login-footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.footer-prompt {
+  font-size: 13px;
+  color: #6b7684;
+}
+
+.create-btn {
+  flex: 1;
+  text-decoration: none;
+  color: #333;
+}
+
+.create-link {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+</style>
