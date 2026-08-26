@@ -1,0 +1,78 @@
+name: Build macOS client
+
+# electron-builder cannot produce a .dmg from Windows or Linux - the app bundle
+# and its signing step need macOS tooling. This runs the same build on a hosted
+# Mac and uploads the installer as an artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: "Target architecture"
+        required: true
+        default: x64
+        type: choice
+        options: [x64, arm64]
+
+jobs:
+  build:
+    # macos-13 is the Intel runner. Electron 11 predates Apple Silicon support
+    # in places, and the bundled Pepper Flash plugin is x64-only - an x64 build
+    # runs on Apple Silicon under Rosetta, which an arm64 build would not fix.
+    runs-on: macos-13
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Write build config
+        # .env.production is gitignored (it carries WS_SECRET), so CI recreates
+        # it. WS_SECRET must match the Red5 server's or the space handshake
+        # fails to decrypt and the client hangs on the loading bar.
+        run: |
+          cat > .env.production <<EOF
+          NODE_ENV=production
+          VITE_DEFAULT_URL=https://playsmallworlds.com
+          VITE_API_URL=https://playsmallworlds.com
+          VITE_USER_AGENT="SmallWorldsClient"
+          VITE_WS_SECRET="${{ secrets.WS_SECRET }}"
+          VITE_WS_URL="wss://playsmallworlds.com/ws/default"
+          EOF
+          test -s .env.production
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Build renderer
+        run: npm run build
+
+      - name: Build macOS installer
+        # Unsigned: no Apple Developer certificate configured. Gatekeeper will
+        # require right-click -> Open on first launch. See the job summary.
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder --mac --${{ inputs.arch }} --publish never
+
+      - name: Show what was produced
+        run: ls -lh dist/*.dmg dist/*.zip 2>/dev/null || ls -lh dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smallworlds-mac-${{ inputs.arch }}
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/latest-mac.yml
+          if-no-files-found: error
+
+      - name: Notes
+        run: |
+          echo "### macOS build complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The app is **unsigned**. On first launch macOS will refuse to open it." >> $GITHUB_STEP_SUMMARY
+          echo "Tell testers to right-click the app and choose **Open**, then confirm." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Signing needs an Apple Developer account (99 USD/yr); notarising" >> $GITHUB_STEP_SUMMARY
+          echo "additionally requires an app-specific password." >> $GITHUB_STEP_SUMMARY
