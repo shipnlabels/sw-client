@@ -15,10 +15,15 @@ on:
 
 jobs:
   build:
-    # macos-13 is the Intel runner. Electron 11 predates Apple Silicon support
-    # in places, and the bundled Pepper Flash plugin is x64-only - an x64 build
-    # runs on Apple Silicon under Rosetta, which an arm64 build would not fix.
-    runs-on: macos-13
+    # Host architecture does not have to match the target: electron-builder
+    # downloads the darwin-x64 Electron for an --x64 build, and the Pepper Flash
+    # plugin is a bundled file rather than something compiled here. macos-13
+    # (the old Intel image) has been retired and queues forever.
+    #
+    # The *target* must stay x64: the bundled Flash plugin is x64-only, so an
+    # x64 app runs on Apple Silicon under Rosetta with working Flash, where a
+    # native arm64 build would launch and render nothing.
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
