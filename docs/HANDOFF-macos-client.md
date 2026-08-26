@@ -5,6 +5,21 @@ picks this up on an actual Mac. Everything below was established from a Windows
 machine plus the game VPS, which is why the last few steps stalled: the
 remaining questions need a Mac to answer.
 
+> **CORRECTION 2026-08-26, later the same day.** A concurrent session (this
+> same one, different window) reached this file's previous conclusion —
+> "quarantine alone fixes it, players are walked through it on the download
+> page" — and that conclusion is **incomplete and the live download page
+> instructions do not actually work**. Freshly re-tested on this Mac with a
+> clean, unmodified copy of the app: stripping *only* `com.apple.quarantine`
+> and then launching via `open` (the same code path as a real double-click)
+> **still fails outright**, zero processes spawn, "incorrect executable
+> format". The earlier "it worked" result came from testing via a raw
+> terminal invocation of the binary — which the original handoff doc's own
+> "check the real error" step suggests doing — and that path bypasses
+> LaunchServices entirely, so it silently sidesteps the actual bug real users
+> hit. See RESOLVED #1 below: the download page needs the *rebuilt* DMG, not
+> just better instructions on top of the current one.
+
 **UPDATE 2026-08-26, same day, from an actual Mac:** two separate bugs found,
 both fixed, and the app now launches and renders correctly through a normal
 double-click. Neither was an architecture problem. See the two "RESOLVED"
@@ -114,7 +129,10 @@ copy. Real options, in order of how much they cost:
    and is still somewhat unusual for end users to trust/run.
 
 No decision has been made yet on which of these to pursue — that's the next
-thing to align on.
+thing to align on. Whatever is decided, the download page at
+<https://playsmallworlds.com/download/mac/> currently tells players that
+removing quarantine is enough. It is not (see the correction box above) and
+needs updating once the rebuilt DMG (with the RESOLVED #1 fix) is live.
 
 ---
 
@@ -263,10 +281,19 @@ another cycle on them:
 | The build targeted arm64 by mistake | `file` on the main executable returned `Mach-O 64-bit executable x86_64` |
 | Rosetta just needed installing | Plausible, but the install command's output was never actually confirmed — **still open**, see check 2 |
 | The Mac was Intel | `uname -m` returned `arm64`. This was *inferred* from the ambiguous Rosetta message for several rounds and was simply wrong |
+| It was an architecture problem at all | It never was. The cause was Gatekeeper quarantine — see the box at the top |
 
 The methodological lesson, offered honestly: `uname -m` should have been
-obtained in the first five minutes. Several rounds were spent building theories
-on an inference about the hardware rather than a fact.
+obtained in the first five minutes, and quarantine should have been eliminated
+before any theory about architecture. The failure mode actively misleads —
+macOS reports an architecture error for a security refusal — so check the cheap,
+non-obvious cause first:
+
+```sh
+xattr -l /Applications/SmallWorlds.app     # is com.apple.quarantine present?
+codesign -dv /Applications/SmallWorlds.app # is it signed at all?
+uname -m                                   # only then, architecture
+```
 
 ---
 
