@@ -5,7 +5,122 @@ picks this up on an actual Mac. Everything below was established from a Windows
 machine plus the game VPS, which is why the last few steps stalled: the
 remaining questions need a Mac to answer.
 
-**The one-line summary:** the macOS build is now correctly signed, but it still
+**UPDATE 2026-08-26, same day, from an actual Mac:** two separate bugs found,
+both fixed, and the app now launches and renders correctly through a normal
+double-click. Neither was an architecture problem. See the two "RESOLVED"
+sections below before reading the rest of this doc — most of what follows is
+the (now-obsolete) investigation trail that led there.
+
+---
+
+## RESOLVED #1 (the one that actually matters): `LSRequiresNativeExecution`
+
+This is almost certainly what the original tester hit, because it blocks the
+*only* way a real user launches the app — double-click, Dock, Spotlight, the
+`open` command. It does **not** block running the raw binary directly from a
+terminal, which is a different code path that skips LaunchServices entirely.
+That distinction is why this was missed for so long and only surfaced once
+testing happened on a real Mac with a real double-click.
+
+The shipped `Info.plist` had:
+
+```
+LSRequiresNativeExecution = true
+```
+
+This tells LaunchServices to refuse Rosetta translation altogether for this
+app. Since the binary is x86_64-only by design (the Flash plugin constraint,
+see below), LaunchServices had no native slice to run and rejected the launch
+with "incorrect executable format" / "not supported on this Mac" — before the
+process even started, no crash log, nothing in Console beyond that.
+
+Confirmed the fix locally: flipping the key to `false` in the installed app's
+`Info.plist` (via `PlistBuddy`) let `open` launch it successfully. Note:
+re-signing that local test with a blunt `codesign --force --deep --sign -`
+afterward *broke* the nested helper processes (only the main process started,
+no window ever appeared) — proper inside-out signing with entitlements
+(exactly what `build-mac.yml`'s "Ad-hoc sign the app bundle" step already
+does) is required; don't hand-patch an installed app as the real fix.
+
+**Real fix, already applied:** `package.json`'s `build.mac` config now sets
+
+```json
+"extendInfo": { "LSRequiresNativeExecution": false }
+```
+
+electron-builder had been setting this key to `true` on its own; this
+overrides it. Needs a CI rebuild (existing `build-mac.yml`, unchanged
+otherwise) to actually take effect — a hand-edited `Info.plist` on an already
+-built `.app` is not a real fix, just how this was diagnosed.
+
+---
+
+## RESOLVED #2: Gatekeeper quarantine (separate, secondary issue)
+
+`/Applications/SmallWorlds.app` was already the correctly signed x86_64 build
+(confirmed via `codesign -dv` — ad-hoc signature present, `lipo -archs` →
+`x86_64`). `codesign --verify --deep --strict` passed clean. Launching it
+still got silently killed (exit 137 / SIGKILL) with nothing in Finder but
+"not supported on this Mac".
+
+The unified log had the real reason:
+
+```
+kernel: (AppleSystemPolicy) ASP: Security policy would not allow process: <pid>, /Applications/SmallWorlds.app/Contents/MacOS/SmallWorlds
+```
+
+`xattr -l` on the app showed `com.apple.quarantine: ...;Safari;...` — Safari
+quarantines every download, and Gatekeeper refuses to run a quarantined app
+that is only ad-hoc signed (no Developer ID, not notarized). On macOS 15
+Sequoia this shows up as the misleading "not supported on this Mac" rather
+than the classic "cannot verify developer" dialog, which is why this looked
+like an architecture failure for so long.
+
+**Fix that confirmed it:**
+
+```sh
+xattr -dr com.apple.quarantine /Applications/SmallWorlds.app
+open /Applications/SmallWorlds.app
+```
+
+App launched, all four processes stayed alive (main + GPU helper + renderer +
+network helper), registered as foreground with LaunchServices, and rendered
+the actual game world (tested in a real room, "crazy monkey's House" — 3D
+avatar, Flash-rendered furniture, inventory/currency UI all working) under
+Rosetta 2. Rosetta itself was never the problem either — `arch -x86_64 uname -m`
+worked fine the whole time.
+
+**This is not a per-machine fix — every user hitting playsmallworlds.com and
+downloading via a browser will get the same quarantine flag and the same
+block.** The one-time `xattr -dr` above only fixes this one already-downloaded
+copy. Real options, in order of how much they cost:
+
+1. **Notarize the build.** Requires an Apple Developer Program membership
+   ($99/yr) tied to an Apple ID, a Developer ID Application certificate, and
+   adding a `notarytool` submit-and-staple step to
+   `.github/workflows/build-mac.yml` after the existing ad-hoc sign step. This
+   is the only option that makes the DMG "just work" with a normal double-click
+   for every user, no instructions needed. Requires the project owner to
+   enroll — not something that can be done from CI credentials alone.
+2. **Tell users to clear Gatekeeper manually.** Either right-click → Open (may
+   still be blocked outright on Sequoia for non-notarized apps depending on
+   config) or System Settings → Privacy & Security → "Open Anyway" after the
+   first blocked attempt, or hand them the `xattr -dr` command. Free, but it's
+   a support burden and a trust hit for a public download page.
+3. **Ship a first-run helper that strips quarantine itself** (e.g. an
+   installer `.pkg` with a postinstall script, since `.pkg` postinstall
+   scripts run outside the quarantine sandbox that blocks the `.app` itself).
+   Avoids needing a paid cert but is more build-pipeline work than option 1
+   and is still somewhat unusual for end users to trust/run.
+
+No decision has been made yet on which of these to pursue — that's the next
+thing to align on.
+
+---
+
+## Original one-line summary (superseded, kept for history)
+
+the macOS build is now correctly signed, but it still
 refuses to launch on an Apple Silicon Mac with "not supported on this Mac", and
 we have not yet confirmed whether the tester was even running the new build.
 
