@@ -272,62 +272,11 @@ onUnmounted(() => {
       </div>
       <!-- Only display this if route.name == space -->
 
-      <div class="stats-container" v-if="route.name == 'space'">
-      <div class="primaryXP" style="-webkit-app-region: no-drag">
-          <v-tooltip location="bottom" :close-on-content-click="false" :open-on-hover="true">
-            <template v-slot:activator="{ props }">
-                  <v-img src="/icon_primary.png" alt="Primary XP" width="31" height="31" class="xp-icon" v-bind="props" />
-      <div class="level-progress" >
-        <v-progress-linear
-        v-bind="props"
-          :model-value="xpPercentage"
-          height="20"
-          rounded
-          bg-color="rgb(58, 200, 210)"
-          color="rgb(87, 225, 240)"
-          class="progress"
-          
-        >
-          <template v-slot:default="{ value }">
-            <div class="progress-content">
-              <span class="level-text">{{ user.defaultAvatar?.avatarXPs?.primary?.level }}</span>
-            </div>
-          </template>
-        </v-progress-linear>
-      </div>
-  </template>
-  <div class="tooltip-content">
-    You are Level {{ user.defaultAvatar?.avatarXPs?.primary?.level }} with <CommaValue :value="user.defaultAvatar?.avatarXPs?.primary?.levelXP" />xp
-    <br />Next Level: <CommaValue :value="user.defaultAvatar?.avatarXPs?.primary?.xp" />xp
-    <br/>
-    (<CommaValue :value="(user.defaultAvatar?.avatarXPs?.primary?.xp - user.defaultAvatar?.avatarXPs?.primary?.levelXP)" />xp to go)
-  </div>
-</v-tooltip>
-  </div>
-    
-      <!-- Currency Display -->
-  <div class="currency-display" style="-webkit-app-region: no-drag">
-    <v-tooltip location="bottom">
-      <template v-slot:activator="{ props }">
-        <div class="currency-item gold" v-bind="props">
-          <v-img src="/balance_gold.png" alt="Gold" width="30" height="30" />
-          <CommaValue :value="user.goldBalance" />
-        </div>
-      </template>
-      <span>You have <CommaValue :value="user.goldBalance" /> gold.</span>
-    </v-tooltip>
-
-    <v-tooltip location="bottom">
-      <template v-slot:activator="{ props }">
-        <div class="currency-item tokens" v-bind="props">
-          <v-img src="/balance_token.png" alt="Tokens" width="30" height="30" />
-          <CommaValue :value="user.tokensBalance" />
-        </div>
-      </template>
-      <span>You have <CommaValue :value="user.tokensBalance" /> tokens.</span>
-    </v-tooltip>
-  </div>
-</div>
+      <!-- The level/gold/token readout used to live here, shown only while
+           in a space. The navigation bar below the title bar carries the same
+           three values, so in-world every player saw each of them twice.
+           Kept in one place - the bar with the SmallWorlds logo - which is
+           visible on every screen rather than only inside a space. -->
       <v-spacer></v-spacer>
       
   </v-app-bar></div>

@@ -1,6 +1,14 @@
 <template>
   <div style="width: 100%; height: 100%; display: flex; flex-direction: column;">
-    <embed 
+    <!-- The same bar the profile carries. It already has everything needed
+         while in-world: home, profile, back/forward, reload, and an address
+         bar that accepts a share link, a /space/<id> path or a bare id - which
+         is what makes space links clickable. The space view was a bare Flash
+         embed with no chrome at all, so none of it was reachable once you
+         entered a space. -->
+    <CurrencyHeader />
+
+    <embed
       v-if="preloader" 
       class="gameFrame" 
       style="flex: 1; width: 100%; height: 100%; display: block;" 
@@ -23,9 +31,11 @@ import router from '@/router';
 import axios from 'axios';
 import { useAuthStore} from '@/stores/auth.js';
 import { useMeta } from 'vue-meta';
+import CurrencyHeader from '@components/CurrencyHeader.vue';
 
 export default defineComponent({
   name: 'SpaceView',
+  components: { CurrencyHeader },
   setup () {
     // useMeta() may only be called during setup(). The previous code re-called it
     // from a watcher on useActiveMeta(), which threw "No manager or current

@@ -78,6 +78,8 @@ watch(WebSocketService.message, (newVal) => {
     <img class="tw-logo" src="/img/smallworlds-logo.svg" alt="SmallWorlds" />
 
     <div class="tw-right">
+      <!-- The only level/gold/token readout in the app. The title bar used to
+           show a second copy while in a space; that one is gone. -->
       <div class="tw-wallet">
         <span class="tw-coin">
           <img src="/icon_primary.png" alt="Level" />
@@ -124,11 +126,24 @@ export default {
       return this.user?.defaultAvatar?.homeSpaceId || null;
     },
 
-    /** Shown as the address-bar placeholder so players can see and copy
-        the link for wherever they currently are. */
+    /** True while the player is inside a space, where the Flash client draws
+        its own level/gold/token readout. */
+    inSpace() {
+      return (this.$route?.path || '').startsWith('/space');
+    },
+
+    /** Shown as the address-bar placeholder so players can see and copy the
+        link for wherever they currently are. A real https URL rather than a
+        smallworlds:// scheme nothing can open - these get pasted into Discord,
+        and a link to the site is one anybody can actually click. */
     currentUrl() {
       const p = this.$route?.path || '/profile';
-      return `smallworlds://${p.replace(/^\//, '')}`;
+      const origin =
+        (typeof window !== 'undefined' && window.location && window.location.origin &&
+         window.location.origin.indexOf('http') === 0)
+          ? window.location.origin
+          : 'https://playsmallworlds.com';
+      return `${origin}${p}`;
     },
   },
 
@@ -169,8 +184,13 @@ export default {
       const raw = (this.urlInput || '').trim();
       if (!raw) return;
 
-      const m = raw.match(/space\/(\d+)/i) || raw.match(/^#?(\d+)$/);
-      if (m) {
+      // Spaces are addressed by numeric id OR by alias (/space/smallwear/), and
+      // both forms get pasted around, so accept either. Matching only \d+ sent
+      // every alias link to the profile instead.
+      const m =
+        raw.match(/space\/([A-Za-z0-9_-]+)/i) ||
+        raw.match(/^#?([A-Za-z0-9_-]+)$/);
+      if (m && !raw.startsWith('/profile')) {
         this.$router.push({ name: 'space', params: { id: m[1] } });
       } else if (raw.startsWith('/')) {
         this.$router.push(raw);

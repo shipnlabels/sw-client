@@ -615,3 +615,68 @@ function sendGATrackingEvent(category, action)
 {
     dataLayer.push({'event': '_trackVirtualview', 'category': category, 'action': action});
 }
+/* ---------------------------------------------------------------------------
+ * Snapshot bridge
+ *
+ * Taking a picture of a space is a Flash-to-JavaScript handoff: the client
+ * calls, verbatim,
+ *
+ *     document.getElementById('Snapshot').setSnapshotData(...)
+ *
+ * The original site embedded webassets/swf/snapshot.swf as an <object
+ * id="Snapshot">, which exposed setSnapshotData to ExternalInterface. The Vue
+ * app has no such element, so getElementById returned null, the call threw
+ * inside the client, and the whole save aborted before it ever reached the
+ * server - SpaceService/saveSpaceSnapshot appears nowhere in the AMF log, and
+ * not one of the 232 spaces has a spaceSnapShotSource.
+ *
+ * This provides the element the client is looking for. It keeps the most
+ * recent frame on window.__swSnapshot so the save path can pick it up, and
+ * reports what it received so the next step - getting the image written to
+ * spaceImagesPath under the name the client then passes to
+ * saveSpaceSnapshot - can be built against real data rather than guesswork.
+ * ------------------------------------------------------------------------ */
+(function installSnapshotBridge() {
+	function install() {
+		if (document.getElementById('Snapshot')) return;
+
+		var el = document.createElement('div');
+		el.id = 'Snapshot';
+		el.style.display = 'none';
+		el.setAttribute('aria-hidden', 'true');
+
+		// Flash calls this with the captured frame. Historically base64 (the
+		// snapshot SWF imported com.hurlant.util.Base64), but accept whatever
+		// arrives and record its shape.
+		el.setSnapshotData = function (data) {
+			try {
+				var kind = typeof data;
+				var len = (data && data.length) ? data.length : 0;
+				window.__swSnapshot = { data: data, at: new Date().toISOString() };
+				console.log('[SWX-SNAPSHOT] setSnapshotData: type=' + kind + ' length=' + len);
+				if (kind === 'string' && len) {
+					console.log('[SWX-SNAPSHOT] head: ' + data.substring(0, 48));
+				}
+			} catch (e) {
+				console.error('[SWX-SNAPSHOT] setSnapshotData failed:', e);
+			}
+			return true;
+		};
+
+		// The snapshot SWF also exposed this; provide it so a call to either
+		// name succeeds rather than throwing.
+		el.updateSnapshot = function () {
+			console.log('[SWX-SNAPSHOT] updateSnapshot called');
+			return true;
+		};
+
+		document.body.appendChild(el);
+		console.log('[SWX-SNAPSHOT] bridge element installed');
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', install);
+	} else {
+		install();
+	}
+})();

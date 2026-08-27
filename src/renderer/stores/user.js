@@ -67,10 +67,18 @@ export const useUserStore = defineStore({
     },
 
     updateState(data) {
-      let newUserInfo = { ...this.$state, ...data };
+      const newUserInfo = { ...this.$state, ...data };
+
+      // Apply to the store first, and synchronously. This used to persist and
+      // then $reset(), which threw the new values away: $reset re-runs state(),
+      // and state() only fills itself in from an asynchronous storage read that
+      // has not resolved yet. So everything read straight after login was still
+      // null - including defaultAvatar.homeSpaceId, which is why the HOME button
+      // sat greyed out even though every avatar has a home space recorded.
+      this.$patch(newUserInfo);
+
       window.storage.removeItem('USER_INFO');
       window.storage.setItem('USER_INFO', JSON.stringify(newUserInfo));
-      this.$reset();
     },
 
     async storeInfo(data) {
@@ -103,7 +111,9 @@ export const useUserStore = defineStore({
       });
       await game.storeInfo(userInfo);
 
-      this.$reset();
+      // No $reset() here. updateState above has already applied everything and
+      // persisted it; resetting afterwards wiped the store back to nulls and
+      // left the app reading empty state right after login.
     },
 
     async createAvatar(avatarData) {

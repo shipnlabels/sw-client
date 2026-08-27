@@ -32,11 +32,19 @@ export const useGameStore = defineStore({
   },
     actions: {
     updateState(data) {
-      let newGameInfo = { ...this.$state, ...data };
+      const newGameInfo = { ...this.$state, ...data };
+
+      // Apply to the store first, and synchronously. This used to write to
+      // storage and then call $reset(), which threw the new values away: $reset
+      // re-runs state(), and state() only fills itself in from an asynchronous
+      // storage read that has not resolved yet. So every field stayed null
+      // right after storeInfo() - and Profile.vue builds the avatar panel's
+      // flashvars from these, so the panel was handed avatarImagesPath=null and
+      // fell back to the default NPC instead of the player's own avatar.
+      this.$patch(newGameInfo);
+
       window.storage.removeItem('GAME_INFO');
       window.storage.setItem('GAME_INFO', JSON.stringify(newGameInfo));
-      this.$reset();
-
     },
     async storeInfo(data) {
       this.updateState(
