@@ -3,6 +3,12 @@
     <div class="sw-page-background" />
 
     <div class="register-wrap">
+      <img
+        class="sw-brand-mark"
+        src="/img/sw2018/logo.png"
+        alt="SmallWorlds"
+      />
+
       <div class="sw-panel register-card register-wizard">
         <div class="sw-panel-header">
           <div class="sw-panel-title">Create your account</div>

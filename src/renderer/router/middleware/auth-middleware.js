@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores/auth.js';
+import { isElectron } from '../../browser-shim.js';
 
 export default async (to, from, next) => {
   const auth = useAuthStore();
@@ -11,7 +12,10 @@ export default async (to, from, next) => {
   } catch (e) {
     console.error('auth.initialize() failed, continuing with current state:', e);
   }
-  let exceptionalRoutes = ['login', 'register', 'invite', 'forgot'];
+  // 'home' is the public landing page, so a signed-out visitor must be able to
+  // reach it - without this it bounced straight to /login and nobody ever saw
+  // the front page.
+  let exceptionalRoutes = ['home', 'login', 'register', 'invite', 'forgot'];
   let isGoingExceptionalRoutes = exceptionalRoutes.includes(to.name);
 
   // A stored session token is proof of login even if isLoggedIn hasn't been
@@ -24,6 +28,16 @@ export default async (to, from, next) => {
     `isLoggedIn=${auth.isLoggedIn} token=${Boolean(auth.token)} ` +
     `session=${Boolean(auth.session)} -> hasSession=${hasSession}`
   );
+
+  // The landing page is a website thing. In the desktop client there is no
+  // marketing to do - the player has already downloaded and opened the app -
+  // and routing '/' there put a second sign-in form in front of the real one.
+  // Checked after the session is known so a signed-in player goes straight to
+  // their profile rather than bouncing via /login.
+  if (isElectron && to.name === 'home') {
+    next({ name: hasSession ? 'profile' : 'login' });
+    return;
+  }
 
   /**
    * IF THE USER IS NOT LOGGED IN
@@ -43,13 +57,15 @@ export default async (to, from, next) => {
    * IF THE USER IS LOGGED IN
    */
   if (isGoingExceptionalRoutes) {
-    // Already on home: redirecting again throws "redundant navigation", which
-    // surfaces as a navigation failure and cancels whatever we were doing.
-    if (from.name === 'home' || from.path === '/') {
+    // A signed-in player has no use for the landing page or the sign-in form,
+    // so send them to their profile. Redirecting to where we already are
+    // throws "redundant navigation", which surfaces as a navigation failure
+    // and cancels whatever we were doing.
+    if (to.name === 'profile' || from.name === 'profile' || from.path === '/profile') {
       next(false);
       return;
     }
-    next({ name: 'home' });
+    next({ name: 'profile' });
     return;
   }
   next();

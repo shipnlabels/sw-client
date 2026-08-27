@@ -3,10 +3,12 @@ import authMiddleware from './middleware/auth-middleware';
 
 const routes = [
   {
+    // The public landing page, styled after the original smallworlds.com.
+    // Signed-in players never see it: the auth guard sends them to /profile.
     path: '/',
     name: 'home',
-    component: () => import('../views/ProfileView.vue'),
-    // meta: { layout: 'auth' },
+    component: () => import('../views/LandingView.vue'),
+    meta: { layout: 'auth' },
   },
   {
     path: '/space/:id/',

@@ -3,6 +3,12 @@
     <div class="sw-page-background" />
 
     <div class="login-wrap">
+      <img
+        class="sw-brand-mark"
+        src="/img/sw2018/logo.png"
+        alt="SmallWorlds"
+      />
+
       <div class="sw-panel login-card">
         <div class="sw-panel-header">
           <div class="sw-panel-title">Sign in</div>

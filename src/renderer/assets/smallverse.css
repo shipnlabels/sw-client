@@ -50,17 +50,21 @@
 
 /* The artwork band sits behind the top of the page and fades into the
    page colour, so panels overlap it the way the original did. */
-/* Our own key art. It is a tall poster (1884x2272), so the two screens frame
-   it differently: the login page shows it whole behind the panel, while the
+/* The key art is a tall poster (1884x2272), so the two screens frame it
+   differently: the login page shows it whole behind the panel, while the
    profile uses it as a band across the top and drops the lower half where the
-   characters are, so nothing competes with the content sitting on it. */
+   characters are, so nothing competes with the content sitting on it.
+   Uses the unbranded plate - tw-keyart.png is the same picture with a TINY
+   WORLDS logo across the top, which has no business on a SmallWorlds sign-up
+   screen. The SmallWorlds mark is placed over it in markup instead, so it can
+   be sized and positioned per screen. */
 .sw-page-background {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 520px;
-  background-image: url('/img/tw-keyart.png');
+  background-image: url('/img/keyart-nobrand.png');
   background-size: contain;
   background-position: center top;
   background-color: #14243f;
@@ -98,9 +102,13 @@
 .login-page .sw-page-background,
 .register-page .sw-page-background {
   height: 100%;
-  background-size: contain;
+  /* The same photograph the landing page opens on, so arriving at sign-in from
+     the front page does not feel like a different site. Cover rather than
+     contain: it is a wide photo, not a poster. */
+  background-image: url('/img/sw2018/header_background_vid_b1.jpg');
+  background-size: cover;
   background-position: center center;
-  background-color: #14243f;      /* fills the letterbox either side */
+  background-color: #0b2a45;
   -webkit-mask-image: none;
   mask-image: none;
 }
@@ -116,6 +124,44 @@
 .sw-page > *:not(.sw-page-background) {
   position: relative;
   z-index: 1;
+}
+
+/* Sign-in and sign-up are the two screens a new player sees before anything
+   else, so they carry the original smallworlds.com palette rather than the
+   in-game one: its blue for headings and links, its orange for the primary
+   action. Scoped to these pages deliberately - repainting the tokens globally
+   would drag the whole in-game UI along with it. */
+.login-page,
+.register-page {
+  --sw-green: #0d68b1;        /* primary action: 2018 blue */
+  --sw-green-dark: #0a4f87;
+  --sw-green-hover: #1477c6;
+  --sw-cyan: #25b2e1;         /* focus rings and accents */
+  --sw-gold: #f96348;         /* the orange used on sign-up */
+  --sw-navy: #323754;
+}
+
+/* The SmallWorlds mark, sitting over the key art above the sign-in and sign-up
+   panels. Kept in markup rather than baked into the artwork so it can be sized
+   per screen and swapped without re-exporting a 4MB plate. The drop shadow is
+   what keeps it legible where the art behind it is pale. */
+.sw-brand-mark {
+  display: block;
+  width: clamp(190px, 26vw, 268px);
+  height: auto;
+  margin: 0 auto clamp(14px, 2.5vw, 22px);
+  filter: drop-shadow(0 2px 10px rgba(11, 23, 48, 0.55));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Short viewports (a laptop with the sign-up wizard open) run out of room
+   before the panel does, so give the mark less of the budget there. */
+@media (max-height: 760px) {
+  .sw-brand-mark {
+    width: clamp(150px, 20vw, 200px);
+    margin-bottom: 10px;
+  }
 }
 
 /* ---------- panels ---------- */
